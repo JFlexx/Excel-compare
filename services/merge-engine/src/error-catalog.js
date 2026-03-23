@@ -172,7 +172,7 @@ function logEngineError(logger, engineError) {
   return payload;
 }
 
-module.exports = {
+export {
   ERROR_DEFINITIONS,
   buildError,
   inferErrorCode,
