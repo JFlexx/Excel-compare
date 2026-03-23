@@ -1,11 +1,11 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
+import test from 'node:test';
+import assert from 'node:assert/strict';
 
-const {
+import {
   buildExportGuard,
   createUserErrorView,
   recordAddinError,
-} = require('../src/error-presenter');
+} from '../src/error-presenter.js';
 
 test('createUserErrorView turns engine errors into user-facing copy without raw technical text', () => {
   const view = createUserErrorView({
