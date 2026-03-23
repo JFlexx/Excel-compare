@@ -126,6 +126,19 @@ Estas acciones deben existir al menos para:
 5. **Revisar cambios auto-resueltos** antes de exportar o guardar el resultado.
 6. **Generar un archivo final** con las decisiones aplicadas.
 
+### 9.1 Requisitos mínimos del flujo final de exportación
+- El sistema debe bloquear la exportación si quedan conflictos pendientes.
+- El sistema debe generar el `.xlsx` final únicamente después de validar la sesión completa.
+- El sistema debe proponer un nombre de archivo sugerido editable por el usuario.
+- El sistema debe mostrar un resumen visible con:
+  - cambios aceptados desde izquierda/base,
+  - cambios aceptados desde derecha/comparado,
+  - ediciones manuales,
+  - hojas afectadas,
+  - conflictos resueltos,
+  - decisiones por tipo.
+- Ese resumen debe poder reutilizarse como base de auditoría interna.
+
 ## No-objetivos del MVP
 Los siguientes puntos quedan explícitamente fuera del MVP, salvo que negocio los priorice después:
 - Colaboración multiusuario en tiempo real.
@@ -180,11 +193,13 @@ Los siguientes puntos quedan explícitamente fuera del MVP, salvo que negocio lo
 - Las diferencias auto-resueltas quedan visibles y auditables dentro de la sesión.
 - Los conflictos pendientes quedan resaltados y no se confunden con cambios ya resueltos.
 - El estado final deja claro si el archivo está listo para exportar o si quedan conflictos por resolver.
+- Antes de exportar, el usuario ve un resumen final entendible y auditable de lo que saldrá en el workbook.
 
 ### 17. Criterios operativos
 - El sistema no bloquea ni falla silenciosamente ante hojas renombradas, celdas combinadas, fórmulas rotas, tablas dinámicas o archivos grandes.
 - Cuando un caso no está soportado por el MVP, el sistema lo comunica explícitamente.
 - El resultado final exportado refleja exactamente las decisiones visibles del usuario.
+- La exportación genera además un resumen visible o exportable con hojas afectadas, conflictos resueltos y decisiones por tipo.
 
 ## Supuestos para iteraciones futuras
 - En futuras versiones podrán agregarse reglas de auto-resolución configurables.

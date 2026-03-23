@@ -274,13 +274,18 @@ El resultado final debe materializarse también mediante **Excel JavaScript API*
 #### Estrategia recomendada
 
 1. La capa de aplicación transforma las decisiones del usuario en un **ApplyPlan**.
-2. El add-in valida que el workbook activo sigue siendo compatible con la sesión.
-3. Se aplican cambios por lotes:
+2. El add-in ejecuta una validación final de exportación:
+   - confirma que no queden conflictos pendientes,
+   - confirma que las ediciones manuales tengan estado persistido,
+   - confirma que el workbook activo sigue siendo compatible con la sesión.
+3. La capa de aplicación genera un **ExportSummary** visible y serializable para auditoría interna.
+4. Se aplican cambios por lotes:
    - actualización de celdas,
    - inserción o eliminación de filas/columnas si el alcance lo contempla,
    - actualización de fórmulas,
    - marcas de revisión o comentarios si se desean.
-4. Se confirma el resultado y se registra la auditoría.
+5. Se genera el `.xlsx` final con nombre sugerido por el sistema y editable por el usuario.
+6. Se confirma el resultado y se registra la auditoría.
 
 #### ApplyPlan sugerido
 
@@ -290,6 +295,8 @@ ApplyPlan
 - preconditions[]
 - operations[]
 - rollbackHints[]
+- suggestedFileName
+- exportSummary
 ```
 
 ```text
@@ -300,11 +307,24 @@ Operation
 - sourceDiffId
 ```
 
+```text
+ExportSummary
+- affectedSheets[]
+- resolvedConflictCount
+- acceptedFromA
+- acceptedFromB
+- manualEditCount
+- autoResolvedCount
+- decisionsByType[]
+- generatedAt
+```
+
 #### Buenas prácticas
 
 - Aplicar cambios en transacciones lógicas por lote.
 - Validar precondiciones para detectar si el libro fue modificado después del diff.
 - Si el riesgo es alto, crear una hoja de respaldo o un duplicado antes de aplicar cambios masivos.
+- Tratar `ExportSummary` como artefacto de salida de primer nivel: debe mostrarse en UI, guardarse junto con la sesión y poder exportarse como evidencia de auditoría.
 
 ## 6. Comparativa explícita: Office Add-in vs VBA vs VSTO/COM
 
