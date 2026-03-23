@@ -10,6 +10,8 @@
   --success-soft: #dff6dd;
   --warning: #a15c00;
   --warning-soft: #fff4ce;
+  --manual: #5c2d91;
+  --manual-soft: #efe4ff;
   --danger: #b42318;
   --danger-soft: #fee4e2;
 
@@ -505,6 +507,7 @@ h1 {
 }
 
 .action-button.tertiary {
+  background: #f7f9fc;
   background: #eef5fc;
   background: #edf2f9;
   color: var(--text);
@@ -584,6 +587,17 @@ h1 {
   .resolution-grid,
   .status-summary,
   .file-meta-row,
+  .pilot-banner,
+  .supported-types {
+    grid-template-columns: 1fr;
+  }
+
+  .manual-edit-actions,
+  .manual-edit-header {
+    flex-direction: column;
+  }
+
+  .app-header {
   .conflict-item-meta,
   .history-item-header,
   .history-item-meta {
@@ -680,4 +694,125 @@ h1 {
   padding-left: 18px;
   color: var(--muted);
   line-height: 1.5;
+}
+
+
+.pilot-banner,
+.system-message,
+.manual-edit-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+}
+
+.pilot-banner {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr);
+  gap: 18px;
+  padding: 20px;
+  margin-bottom: 20px;
+  border-left: 6px solid var(--primary);
+}
+
+.banner-eyebrow {
+  margin: 0 0 8px;
+  color: var(--primary);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.pilot-banner h2 {
+  margin: 0 0 10px;
+  font-size: 1.3rem;
+}
+
+.pilot-banner p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.scope-list,
+.supported-types {
+  display: grid;
+  gap: 10px;
+}
+
+.scope-list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.scope-list li {
+  color: var(--text);
+  line-height: 1.4;
+}
+
+.system-message {
+  margin-top: 16px;
+  padding: 16px;
+}
+
+.system-message h3,
+.manual-edit-header h3 {
+  margin: 0 0 8px;
+}
+
+.system-message p,
+.manual-edit-header p,
+.manual-edit-help {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.system-message-warning {
+  border-left: 4px solid var(--warning);
+  background: var(--warning-soft);
+}
+
+.system-message-neutral {
+  border-left: 4px solid var(--primary);
+  background: #f3f8ff;
+}
+
+.supported-types {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: 14px;
+}
+
+.chip-manual {
+  color: var(--manual);
+  background: var(--manual-soft);
+}
+
+.manual-edit-card {
+  padding: 16px;
+}
+
+.manual-edit-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.manual-edit-input {
+  width: 100%;
+  resize: vertical;
+  margin-top: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: #fff;
+  font: inherit;
+}
+
+.manual-edit-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
 }

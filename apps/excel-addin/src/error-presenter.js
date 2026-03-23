@@ -1,3 +1,4 @@
+import { normalizeEngineError } from '../../../services/merge-engine/src/error-catalog.js';
 import { normalizeEngineError, OPERATIONAL_LIMITS } from '../../../services/merge-engine/src/error-catalog.js';
 import { normalizeEngineError } from '../../../services/merge-engine/src/error-catalog.js';
 const ERROR_DEFINITIONS = Object.freeze({
@@ -124,6 +125,11 @@ export function resolveActionLabel(code) {
     case 'CRITICAL_CONFLICTS_PENDING_EXPORT':
       return 'Revisar conflictos críticos';
     case 'WORKBOOK_TOO_LARGE':
+      return 'Ver límites del MVP';
+    case 'UNSUPPORTED_PILOT_FEATURES':
+      return 'Ver alcance del piloto';
+    case 'AMBIGUOUS_STRUCTURAL_CHANGE':
+      return 'Revisar estructura';
       return 'Ver límites operativos';
     case 'INVALID_SESSION_STATE':
       return 'Reiniciar comparación';

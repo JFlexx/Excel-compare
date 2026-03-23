@@ -45,6 +45,28 @@ export const ERROR_DEFINITIONS = Object.freeze({
     severity: 'error',
     stage: 'ingestion',
   },
+  UNSUPPORTED_PILOT_FEATURES: {
+    code: 'UNSUPPORTED_PILOT_FEATURES',
+    userTitle: 'Este archivo queda fuera del piloto',
+    userMessage:
+      'Detectamos macros, tablas dinámicas complejas, objetos embebidos o formatos avanzados. Este caso no está soportado en el piloto.',
+    userAction:
+      'Elimina esas características o usa una versión simplificada del libro antes de volver a compararlo.',
+    status: 'blocked',
+    severity: 'error',
+    stage: 'analysis',
+  },
+  AMBIGUOUS_STRUCTURAL_CHANGE: {
+    code: 'AMBIGUOUS_STRUCTURAL_CHANGE',
+    userTitle: 'La estructura del libro es ambigua para este piloto',
+    userMessage:
+      'Revisa hojas renombradas, celdas combinadas o movimientos complejos antes de volver a intentar. Este piloto solo admite hojas agregadas o eliminadas de forma sencilla.',
+    userAction:
+      'Simplifica la estructura del libro o separa el cambio en un archivo más claro para el piloto.',
+    status: 'blocked',
+    severity: 'error',
+    stage: 'analysis',
+  },
   UNREADABLE_SHEET: {
     code: 'UNREADABLE_SHEET',
     userTitle: 'No pudimos leer una de las hojas',
@@ -180,6 +202,12 @@ export function inferErrorCode(input = {}) {
   }
   if (probe.includes('unsupported') || probe.includes('xlsb') || probe.includes('csv')) {
     return 'UNSUPPORTED_FORMAT';
+  }
+  if (probe.includes('macro') || probe.includes('vba') || probe.includes('pivot') || probe.includes('embedded') || probe.includes('object') || probe.includes('format')) {
+    return 'UNSUPPORTED_PILOT_FEATURES';
+  }
+  if (probe.includes('ambiguous') || probe.includes('rename') || probe.includes('merged cell') || probe.includes('structural')) {
+    return 'AMBIGUOUS_STRUCTURAL_CHANGE';
   }
   if (probe.includes('worksheet') || probe.includes('sheet')) {
     return 'UNREADABLE_SHEET';

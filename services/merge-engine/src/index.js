@@ -225,6 +225,8 @@ export function applyDecisionToSession(session, decision) {
     status: 'Ready',
   };
 }
+
+export { apply_merge_decisions, buildXlsxPayload } from './apply-merge-decisions.js';
 export {
   apply_merge_decisions,
   buildXlsxPayload,

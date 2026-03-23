@@ -17,21 +17,23 @@ const state = {
   files: [
     {
       side: 'left',
-      label: 'Libro izquierdo',
+      label: 'Archivo base',
       role: 'Referencia original',
       fileName: 'Ventas_Q1_Base.xlsx',
       updatedAt: '18 mar 2026 · 09:14',
       sheets: ['Resumen', 'Clientes', 'Forecast'],
       size: '1,8 MB',
+      pilotValidation: 'Dentro del piloto',
     },
     {
       side: 'right',
-      label: 'Libro derecho',
+      label: 'Archivo comparado',
       role: 'Versión con cambios detectados',
       fileName: 'Ventas_Q1_Actualizado.xlsx',
       updatedAt: '21 mar 2026 · 16:42',
-      sheets: ['Resumen', 'Clientes', 'Forecast'],
+      sheets: ['Resumen', 'Clientes', 'Forecast', 'Supuestos'],
       size: '1,9 MB',
+      pilotValidation: 'Dentro del piloto',
     },
   ],
   conflicts: [
@@ -49,10 +51,48 @@ const state = {
       userDecision: 'unresolved',
       finalState: 'pending',
       resolution: null,
-      description: 'Cambio en el estado operativo del cliente 1042.',
+      manualValue: '',
+      supportsManualEdit: true,
+      description: 'Cambio de valor simple en una celda existente en ambos lados.',
     },
     {
       id: 'conf-2',
+      sheet: 'Forecast',
+      cell: 'B7',
+      type: 'Fórmula simple distinta',
+      leftValue: '=SUM(B2:B6)',
+      rightValue: '=SUM(B2:B6)-B4',
+      status: 'manual',
+      resolution: 'manual',
+      manualValue: '=SUM(B2:B6)-B5',
+      supportsManualEdit: true,
+      description: 'La fórmula sigue siendo de una sola celda y se puede editar manualmente con una expresión simple.',
+    },
+    {
+      id: 'conf-3',
+      sheet: 'Supuestos',
+      cell: 'Hoja completa',
+      type: 'Hoja agregada',
+      leftValue: 'No existe en archivo base',
+      rightValue: 'Nueva hoja con supuestos comerciales',
+      status: 'resolved',
+      resolution: 'right',
+      manualValue: '',
+      supportsManualEdit: false,
+      description: 'La hoja solo existe en el archivo comparado y puede aceptarse completa.',
+    },
+    {
+      id: 'conf-4',
+      sheet: 'Resumen histórico',
+      cell: 'Hoja completa',
+      type: 'Hoja eliminada',
+      leftValue: 'Hoja presente en archivo base',
+      rightValue: 'No existe en archivo comparado',
+      status: 'pending',
+      resolution: null,
+      manualValue: '',
+      supportsManualEdit: false,
+      description: 'Caso sencillo de hoja eliminada. Se resuelve aceptando izquierda o derecha para la hoja completa.',
       sheet: 'Clientes',
       cell: 'F22',
       location: { worksheetName: 'Clientes', a1: 'F22', rangeA1: 'F22' },
@@ -348,6 +388,11 @@ const elements = {
   resolutionOrigin: document.querySelector('#resolution-origin'),
   acceptLeft: document.querySelector('#accept-left'),
   acceptRight: document.querySelector('#accept-right'),
+  manualEditInput: document.querySelector('#manual-edit-input'),
+  manualEditHelp: document.querySelector('#manual-edit-help'),
+  manualEditScope: document.querySelector('#manual-edit-scope'),
+  saveManual: document.querySelector('#save-manual'),
+  clearManual: document.querySelector('#clear-manual'),
   autoResolve: document.querySelector('#auto-resolve'),
   historyCount: document.querySelector('#history-count'),
   historyScope: document.querySelector('#history-scope'),
@@ -507,6 +552,18 @@ function syncArtifacts() {
   state.supportExport = synced.supportExport;
 }
 
+function getStatusMeta(status) {
+  if (status === 'resolved') {
+    return { className: 'chip-success', text: 'Resuelto' };
+  }
+
+  if (status === 'manual') {
+    return { className: 'chip-manual', text: 'Editado manualmente' };
+  }
+
+  return { className: 'chip-pending', text: 'Pendiente' };
+}
+
 function renderFiles() {
   elements.fileSummary.innerHTML = state.files
     .map((file, index) => {
@@ -583,6 +640,7 @@ function renderFiles() {
             <span class="file-meta">Actualizado: ${file.updatedAt}</span>
             <span class="file-meta">Tamaño: ${file.size}</span>
             <span class="file-meta">Hojas: ${file.sheets.join(', ')}</span>
+            <span class="file-meta">Validación piloto: ${file.pilotValidation}</span>
             <span class="file-meta">Checksum MVP: ${fingerprint.checksum}</span>
             <span class="file-meta">Detalle: ${file.location}</span>
             <span class="file-meta">Estado: ${file.status}</span>
@@ -669,6 +727,8 @@ function renderConflictList() {
   }
 
   if (conflicts.length === 0) {
+    elements.conflictList.innerHTML = '<li class="empty-state">No hay conflictos para los filtros seleccionados.</li>';
+    renderDetail();
     elements.conflictList.innerHTML = '<li class="empty-state">No hay conflictos disponibles para el filtro seleccionado.</li>';
     return;
   }
@@ -676,6 +736,7 @@ function renderConflictList() {
   elements.conflictList.innerHTML = conflicts
     .map((conflict) => {
       const isActive = conflict.id === state.selectedConflictId;
+      const statusMeta = getStatusMeta(conflict.status);
       const isResolved = conflict.finalState !== 'pending';
       const statusClass = isResolved ? 'chip-success' : 'chip-pending';
       const statusText = isResolved ? 'Resuelto' : 'Pendiente';
@@ -706,6 +767,7 @@ function renderConflictList() {
                 <span class="chip ${statusClass}">${statusText}</span>
                 ${originChip}
               </div>
+              <span class="chip ${statusMeta.className}">${statusMeta.text}</span>
             </div>
             <div class="conflict-item-meta">
               <span>Izquierda: ${conflict.sourceA.displayValue}</span>
@@ -831,6 +893,10 @@ async function handleCompareSubmit(event) {
     renderError();
   }
   const current = visibleConflict;
+  const statusMeta = getStatusMeta(current.status);
+  const leftBook = state.files.find((file) => file.side === 'left');
+  const rightBook = state.files.find((file) => file.side === 'right');
+  const manualAllowed = current.supportsManualEdit;
   const isResolved = current.finalState !== 'pending';
   const leftBook = state.files.find((file) => file.side === 'left');
   const rightBook = state.files.find((file) => file.side === 'right');
@@ -864,19 +930,27 @@ async function handleCompareSubmit(event) {
   elements.detailSheet.textContent = current.sheet;
   elements.detailCell.textContent = current.cell;
   elements.detailType.textContent = current.type;
+  elements.leftBookName.textContent = leftBook?.fileName ?? 'Archivo base';
+  elements.rightBookName.textContent = rightBook?.fileName ?? 'Archivo comparado';
   elements.leftBookName.textContent = state.session?.sourceA?.label ?? 'Origen A';
   elements.rightBookName.textContent = state.session?.sourceB?.label ?? state.workbook?.name ?? 'Workbook activo';
   elements.leftValue.textContent = current.leftValue;
   elements.rightValue.textContent = current.rightValue;
   elements.activeSheet.textContent = current.sheet;
   elements.activeCell.textContent = current.cell;
+  elements.detailStatusChip.textContent = statusMeta.text;
+  elements.detailStatusChip.className = `chip ${statusMeta.className}`;
+  elements.manualEditInput.value = current.manualValue ?? '';
   elements.finalValue.textContent = finalValue;
   elements.resolutionOrigin.textContent = originLabel;
   elements.detailStatusChip.textContent = isResolved ? 'Resuelto' : 'Pendiente';
   elements.detailStatusChip.className = `chip ${isResolved ? 'chip-success' : 'chip-pending'}`;
 
-  if (!isResolved) {
+  if (current.status === 'pending') {
     elements.resolutionMessage.textContent = `${current.description} Este conflicto sigue pendiente.`;
+  } else if (current.status === 'manual') {
+    elements.resolutionMessage.textContent = `${current.description} Se registró una edición manual básica o un comentario operativo del piloto.`;
+  } else if (current.resolution === 'left') {
   } else if (current.resolution?.origin === 'automatic') {
     elements.resolutionMessage.textContent = `${current.description} Se resolvió mediante una regla automática registrada en el historial.`;
   } else if (current.resolution?.side === 'left') {
@@ -962,6 +1036,16 @@ async function focusConflict(conflictId, { source }) {
     return;
   }
 
+  elements.acceptLeft.disabled = current.status === 'resolved' && current.resolution === 'left';
+  elements.acceptRight.disabled = current.status === 'resolved' && current.resolution === 'right';
+  elements.manualEditInput.disabled = !manualAllowed;
+  elements.saveManual.disabled = !manualAllowed;
+  elements.clearManual.disabled = !manualAllowed;
+  elements.manualEditScope.textContent = manualAllowed ? 'Dentro del alcance' : 'Fuera del alcance';
+  elements.manualEditScope.className = `chip ${manualAllowed ? 'chip-neutral' : 'chip-alert'}`;
+  elements.manualEditHelp.textContent = manualAllowed
+    ? 'La edición manual básica solo está disponible para valores y fórmulas simples.'
+    : 'La edición manual básica solo está disponible para valores y fórmulas simples.';
   const occurredAt = new Date().toISOString();
   const decisionRecord = {
     id: `decision:${conflict.id}`,
@@ -1305,6 +1389,55 @@ function renderHistoryPanel() {
     : state.supportExport?.jsonl ?? '';
 }
 
+function validateManualValue(conflict, rawValue) {
+  const trimmed = rawValue.trim();
+  if (!conflict.supportsManualEdit) {
+    return 'La edición manual básica solo está disponible para valores y fórmulas simples.';
+  }
+
+  if (!trimmed) {
+    return 'El valor final no puede estar vacío.';
+  }
+
+  if (conflict.type === 'Fórmula simple distinta' && !trimmed.startsWith('=')) {
+    return "Las fórmulas manuales deben empezar por '='.";
+  }
+
+  return null;
+}
+
+function saveManualEdit() {
+  const conflict = getSelectedConflict();
+  if (!conflict) {
+    return;
+  }
+
+  const rawValue = elements.manualEditInput.value;
+  const validationMessage = validateManualValue(conflict, rawValue);
+  if (validationMessage) {
+    elements.manualEditHelp.textContent = validationMessage;
+    return;
+  }
+
+  conflict.status = 'manual';
+  conflict.resolution = 'manual';
+  conflict.manualValue = rawValue.trim();
+  elements.manualEditHelp.textContent = 'Se guardó una edición manual básica para este conflicto.';
+  renderSummary();
+  renderConflictList();
+  renderDetail();
+}
+
+function clearManualEditDraft() {
+  const conflict = getSelectedConflict();
+  if (!conflict || !conflict.supportsManualEdit) {
+    return;
+  }
+
+  elements.manualEditInput.value = conflict.manualValue ?? '';
+  elements.manualEditHelp.textContent = 'La edición manual básica solo está disponible para valores y fórmulas simples.';
+}
+
 function bindEvents() {
   elements.basePath.addEventListener('input', (event) => {
     state.selections.basePath = event.target.value.trim();
@@ -1365,6 +1498,8 @@ function init() {
   renderHistoryPanel();
   elements.acceptLeft.addEventListener('click', () => resolveConflict('left'));
   elements.acceptRight.addEventListener('click', () => resolveConflict('right'));
+  elements.saveManual.addEventListener('click', saveManualEdit);
+  elements.clearManual.addEventListener('click', clearManualEditDraft);
   elements.applyLeftSheet.addEventListener('click', () => applyResolutionToSheet('left'));
   elements.applyRightSheet.addEventListener('click', () => applyResolutionToSheet('right'));
   elements.manualEditInput.addEventListener('input', (event) => {
