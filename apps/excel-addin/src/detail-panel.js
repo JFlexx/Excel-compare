@@ -1,4 +1,4 @@
-import { createManualEditDecision, validateManualEdit } from '../../../services/merge-engine/src/index.js';
+import { createManualEditDecision, validateManualEdit } from './manual-edit.js';
 
 function findConflict(session, conflictId) {
   return (session.conflicts ?? []).find((conflict) => conflict.id === conflictId);
