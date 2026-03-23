@@ -1,0 +1,420 @@
+{
+  "sessionId": "ms_demo_budget_001",
+  "createdAt": "2026-03-23T10:30:00Z",
+  "sourceA": {
+    "workbookId": "wb_a_budget_v1",
+    "label": "budget.base.xlsx",
+    "path": "/files/budget.base.xlsx"
+  },
+  "sourceB": {
+    "workbookId": "wb_b_budget_v2",
+    "label": "budget.review.xlsx",
+    "path": "/files/budget.review.xlsx"
+  },
+  "examples": [
+    {
+      "name": "simple_value_change",
+      "description": "Cambio simple de valor en una sola celda.",
+      "workbookDiff": {
+        "id": "wbd:wb_a_budget_v1:wb_b_budget_v2",
+        "nodeType": "WorkbookDiff",
+        "location": {
+          "worksheetName": null,
+          "sheetIndex": null,
+          "row": null,
+          "column": null,
+          "a1": null,
+          "rangeA1": null
+        },
+        "changeType": "modified",
+        "sourceA": {
+          "workbookId": "wb_a_budget_v1",
+          "exists": true
+        },
+        "sourceB": {
+          "workbookId": "wb_b_budget_v2",
+          "exists": true
+        },
+        "userDecision": "take_b",
+        "finalState": "accepted_b",
+        "worksheetDiffs": [
+          {
+            "id": "wsd:summary:0",
+            "nodeType": "WorksheetDiff",
+            "worksheetId": "ws:summary:0",
+            "location": {
+              "worksheetName": "Summary",
+              "sheetIndex": 0,
+              "row": null,
+              "column": null,
+              "a1": null,
+              "rangeA1": "Summary!A1:XFD1048576"
+            },
+            "changeType": "modified",
+            "sourceA": {
+              "name": "Summary",
+              "exists": true
+            },
+            "sourceB": {
+              "name": "Summary",
+              "exists": true
+            },
+            "userDecision": "take_b",
+            "finalState": "accepted_b",
+            "cellDiffs": [
+              {
+                "id": "cell:summary:0:B4",
+                "nodeType": "CellDiff",
+                "worksheetId": "ws:summary:0",
+                "location": {
+                  "worksheetName": "Summary",
+                  "sheetIndex": 0,
+                  "row": 4,
+                  "column": 2,
+                  "a1": "B4",
+                  "rangeA1": "B4"
+                },
+                "changeType": "modified",
+                "sourceA": {
+                  "value": 1200,
+                  "displayValue": "1200",
+                  "formula": null,
+                  "type": "number",
+                  "exists": true
+                },
+                "sourceB": {
+                  "value": 1350,
+                  "displayValue": "1350",
+                  "formula": null,
+                  "type": "number",
+                  "exists": true
+                },
+                "userDecision": "take_b",
+                "finalState": "accepted_b",
+                "conflictIds": []
+              }
+            ],
+            "conflicts": []
+          }
+        ],
+        "conflicts": []
+      },
+      "mergeDecisions": [
+        {
+          "id": "decision:cell:summary:0:B4",
+          "nodeType": "MergeDecision",
+          "targetType": "cell",
+          "targetId": "cell:summary:0:B4",
+          "location": {
+            "worksheetName": "Summary",
+            "sheetIndex": 0,
+            "row": 4,
+            "column": 2,
+            "a1": "B4",
+            "rangeA1": "B4"
+          },
+          "changeType": "modified",
+          "sourceA": {
+            "value": 1200,
+            "exists": true
+          },
+          "sourceB": {
+            "value": 1350,
+            "exists": true
+          },
+          "userDecision": "take_b",
+          "finalState": "accepted_b",
+          "decidedBy": "user:ana",
+          "decidedAt": "2026-03-23T10:35:00Z"
+        }
+      ],
+      "mergeResult": {
+        "id": "merge-result:ms_demo_budget_001:01",
+        "nodeType": "MergeResult",
+        "workbookDiffId": "wbd:wb_a_budget_v1:wb_b_budget_v2",
+        "location": {
+          "worksheetName": null,
+          "sheetIndex": null,
+          "row": null,
+          "column": null,
+          "a1": null,
+          "rangeA1": null
+        },
+        "changeType": "modified",
+        "sourceA": {
+          "workbookId": "wb_a_budget_v1",
+          "exists": true
+        },
+        "sourceB": {
+          "workbookId": "wb_b_budget_v2",
+          "exists": true
+        },
+        "userDecision": "take_b",
+        "finalState": "accepted_b",
+        "appliedDecisionIds": [
+          "decision:cell:summary:0:B4"
+        ],
+        "output": {
+          "workbookId": "wb_merged_budget_01",
+          "path": "/files/budget.merged.value-change.xlsx"
+        }
+      }
+    },
+    {
+      "name": "formula_difference",
+      "description": "La fórmula cambia entre ambos archivos aunque la celda siga existiendo en ambos lados.",
+      "cellDiff": {
+        "id": "cell:summary:0:C10",
+        "nodeType": "CellDiff",
+        "worksheetId": "ws:summary:0",
+        "location": {
+          "worksheetName": "Summary",
+          "sheetIndex": 0,
+          "row": 10,
+          "column": 3,
+          "a1": "C10",
+          "rangeA1": "C10"
+        },
+        "changeType": "formula_changed",
+        "sourceA": {
+          "value": 500,
+          "displayValue": "500",
+          "formula": "=SUM(C4:C9)",
+          "type": "formula",
+          "exists": true
+        },
+        "sourceB": {
+          "value": 520,
+          "displayValue": "520",
+          "formula": "=SUM(C4:C8)+C9",
+          "type": "formula",
+          "exists": true
+        },
+        "userDecision": "manual_edit",
+        "finalState": "merged",
+        "conflictIds": [
+          "conflict:cell:summary:0:C10"
+        ]
+      },
+      "conflict": {
+        "id": "conflict:cell:summary:0:C10",
+        "nodeType": "Conflict",
+        "scopeType": "cell",
+        "location": {
+          "worksheetName": "Summary",
+          "sheetIndex": 0,
+          "row": 10,
+          "column": 3,
+          "a1": "C10",
+          "rangeA1": "C10"
+        },
+        "changeType": "conflict",
+        "sourceA": {
+          "formula": "=SUM(C4:C9)",
+          "exists": true
+        },
+        "sourceB": {
+          "formula": "=SUM(C4:C8)+C9",
+          "exists": true
+        },
+        "reason": "Both formula definitions differ and require validation.",
+        "cellRefs": [
+          "cell:summary:0:C10"
+        ],
+        "userDecision": "manual_edit",
+        "finalState": "merged"
+      }
+    },
+    {
+      "name": "worksheet_added_removed",
+      "description": "Una hoja fue añadida en B y otra fue eliminada respecto a A.",
+      "worksheetDiffs": [
+        {
+          "id": "wsd:forecast:2",
+          "nodeType": "WorksheetDiff",
+          "worksheetId": "ws:forecast:2",
+          "location": {
+            "worksheetName": "Forecast",
+            "sheetIndex": 2,
+            "row": null,
+            "column": null,
+            "a1": null,
+            "rangeA1": "Forecast!A1:XFD1048576"
+          },
+          "changeType": "added",
+          "sourceA": {
+            "name": "Forecast",
+            "exists": false
+          },
+          "sourceB": {
+            "name": "Forecast",
+            "exists": true
+          },
+          "userDecision": "take_b",
+          "finalState": "accepted_b",
+          "cellDiffs": [],
+          "conflicts": []
+        },
+        {
+          "id": "wsd:archive:3",
+          "nodeType": "WorksheetDiff",
+          "worksheetId": "ws:archive:3",
+          "location": {
+            "worksheetName": "Archive",
+            "sheetIndex": 3,
+            "row": null,
+            "column": null,
+            "a1": null,
+            "rangeA1": "Archive!A1:XFD1048576"
+          },
+          "changeType": "removed",
+          "sourceA": {
+            "name": "Archive",
+            "exists": true
+          },
+          "sourceB": {
+            "name": "Archive",
+            "exists": false
+          },
+          "userDecision": "take_a",
+          "finalState": "accepted_a",
+          "cellDiffs": [],
+          "conflicts": []
+        }
+      ]
+    },
+    {
+      "name": "multi_cell_range_conflict",
+      "description": "Conflicto múltiple sobre un rango continuo con varias celdas dependientes.",
+      "conflict": {
+        "id": "conflict:range:summary:0:D5:F6",
+        "nodeType": "Conflict",
+        "scopeType": "range",
+        "location": {
+          "worksheetName": "Summary",
+          "sheetIndex": 0,
+          "row": 5,
+          "column": 4,
+          "a1": "D5",
+          "rangeA1": "D5:F6"
+        },
+        "changeType": "conflict",
+        "sourceA": {
+          "value": "Base allocation block",
+          "exists": true
+        },
+        "sourceB": {
+          "value": "Reviewed allocation block",
+          "exists": true
+        },
+        "reason": "Multiple values and formulas changed inside the same dependent range.",
+        "cellRefs": [
+          "cell:summary:0:D5",
+          "cell:summary:0:E5",
+          "cell:summary:0:F5",
+          "cell:summary:0:D6",
+          "cell:summary:0:E6",
+          "cell:summary:0:F6"
+        ],
+        "userDecision": "manual_edit",
+        "finalState": "merged"
+      },
+      "cellDiffs": [
+        {
+          "id": "cell:summary:0:D5",
+          "nodeType": "CellDiff",
+          "worksheetId": "ws:summary:0",
+          "location": {
+            "worksheetName": "Summary",
+            "sheetIndex": 0,
+            "row": 5,
+            "column": 4,
+            "a1": "D5",
+            "rangeA1": "D5"
+          },
+          "changeType": "modified",
+          "sourceA": {
+            "value": 10,
+            "displayValue": "10",
+            "formula": null,
+            "type": "number",
+            "exists": true
+          },
+          "sourceB": {
+            "value": 12,
+            "displayValue": "12",
+            "formula": null,
+            "type": "number",
+            "exists": true
+          },
+          "userDecision": "manual_edit",
+          "finalState": "merged",
+          "conflictIds": [
+            "conflict:range:summary:0:D5:F6"
+          ]
+        },
+        {
+          "id": "cell:summary:0:F6",
+          "nodeType": "CellDiff",
+          "worksheetId": "ws:summary:0",
+          "location": {
+            "worksheetName": "Summary",
+            "sheetIndex": 0,
+            "row": 6,
+            "column": 6,
+            "a1": "F6",
+            "rangeA1": "F6"
+          },
+          "changeType": "formula_changed",
+          "sourceA": {
+            "value": 30,
+            "displayValue": "30",
+            "formula": "=SUM(D6:E6)",
+            "type": "formula",
+            "exists": true
+          },
+          "sourceB": {
+            "value": 34,
+            "displayValue": "34",
+            "formula": "=SUM(D6:E6)+2",
+            "type": "formula",
+            "exists": true
+          },
+          "userDecision": "manual_edit",
+          "finalState": "merged",
+          "conflictIds": [
+            "conflict:range:summary:0:D5:F6"
+          ]
+        }
+      ],
+      "mergeDecision": {
+        "id": "decision:conflict:range:summary:0:D5:F6",
+        "nodeType": "MergeDecision",
+        "targetType": "conflict",
+        "targetId": "conflict:range:summary:0:D5:F6",
+        "location": {
+          "worksheetName": "Summary",
+          "sheetIndex": 0,
+          "row": 5,
+          "column": 4,
+          "a1": "D5",
+          "rangeA1": "D5:F6"
+        },
+        "changeType": "conflict",
+        "sourceA": {
+          "value": "Base allocation block",
+          "exists": true
+        },
+        "sourceB": {
+          "value": "Reviewed allocation block",
+          "exists": true
+        },
+        "userDecision": "manual_edit",
+        "finalState": "merged",
+        "decidedBy": "user:ana",
+        "decidedAt": "2026-03-23T11:00:00Z",
+        "note": "Merged manually after validating totals and formulas."
+      }
+    }
+  ]
+}
