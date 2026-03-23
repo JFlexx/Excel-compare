@@ -1,5 +1,7 @@
 import { createManualEditDecision, validateManualEdit } from '../../../services/merge-engine/src/manual-decisions.js';
 import { syncDerivedHistoryArtifacts, upsertMergeDecision } from './history-panel.js';
+import { createManualEditDecision, validateManualEdit } from './manual-edit.js';
+import { createManualEditDecision, validateManualEdit } from './merge-engine-client.js';
 
 function findConflict(session, conflictId) {
   return (session.conflicts ?? []).find((conflict) => conflict.id === conflictId);

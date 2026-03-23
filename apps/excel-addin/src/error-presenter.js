@@ -1,4 +1,46 @@
 import { normalizeEngineError } from '../../../services/merge-engine/src/error-catalog.js';
+const ERROR_DEFINITIONS = Object.freeze({
+  CORRUPT_FILE: {
+    code: 'CORRUPT_FILE',
+    userTitle: 'No pudimos abrir el archivo',
+    userMessage:
+      'Parece que el archivo está dañado, incompleto o protegido de una forma que este MVP todavía no puede procesar. Prueba con otra copia del archivo o vuelve a guardarlo antes de intentarlo de nuevo.',
+    userAction: 'Revisa si el archivo se abre correctamente en Excel y vuelve a cargarlo.',
+    status: 'blocked',
+    severity: 'error',
+    stage: 'ingestion',
+  },
+  UNINTERPRETABLE_FORMULAS: {
+    code: 'UNINTERPRETABLE_FORMULAS',
+    userTitle: 'Hay fórmulas que necesitan revisión',
+    userMessage:
+      'Detectamos fórmulas que este MVP no puede interpretar con seguridad. Necesitamos que las revises o simplifiques antes de continuar.',
+    userAction: 'Verifica las fórmulas señaladas y vuelve a intentar la comparación.',
+    status: 'needs_attention',
+    severity: 'error',
+    stage: 'analysis',
+  },
+  WORKBOOK_TOO_LARGE: {
+    code: 'WORKBOOK_TOO_LARGE',
+    userTitle: 'El libro es demasiado grande para este MVP',
+    userMessage:
+      'El archivo supera el tamaño o la complejidad que podemos procesar de forma confiable en esta versión. Divide el libro o reduce el alcance antes de volver a intentarlo.',
+    userAction: 'Reduce la cantidad de hojas o el rango utilizado y vuelve a cargar el archivo.',
+    status: 'blocked',
+    severity: 'error',
+    stage: 'limits',
+  },
+  CRITICAL_CONFLICTS_PENDING_EXPORT: {
+    code: 'CRITICAL_CONFLICTS_PENDING_EXPORT',
+    userTitle: 'Todavía no puedes exportar',
+    userMessage:
+      'Aún quedan conflictos críticos por resolver. Revisa los elementos marcados y completa esas decisiones antes de exportar el resultado final.',
+    userAction: 'Abre la lista de conflictos críticos y resuélvelos antes de exportar.',
+    status: 'blocked',
+    severity: 'error',
+    stage: 'export',
+  },
+});
 
 export const VIEW_STATE_BY_STATUS = Object.freeze({
   blocked: {
@@ -91,4 +133,59 @@ export function recordAddinError(logger, viewModel) {
 
   console.error(payload);
   return payload;
+}
+
+export {
+  VIEW_STATE_BY_STATUS,
+  buildExportGuard,
+  createUserErrorView,
+  recordAddinError,
+  resolveActionLabel,
+};
+function normalizeEngineError(input = {}) {
+  const code = input.code || inferErrorCode(input);
+  const definition = ERROR_DEFINITIONS[code] || ERROR_DEFINITIONS.CORRUPT_FILE;
+  const context = input.context ?? {};
+
+  return {
+    ...definition,
+    supportContext: {
+      sessionId: context.sessionId,
+      workbookId: context.workbookId,
+      worksheetName: context.worksheetName,
+      fileName: context.fileName,
+      operation: context.operation,
+      limits: context.limits,
+      metrics: context.metrics,
+      pendingConflictCount: context.pendingConflictCount,
+    },
+    technicalDetails: {
+      source: context.source || 'merge-engine',
+      operation: context.operation,
+      rawMessage: input.cause?.message || context.rawMessage,
+      rawCode: input.cause?.code || context.rawCode,
+      stack: input.cause?.stack,
+      causeName: input.cause?.name,
+      diagnostics: context.diagnostics,
+    },
+  };
+}
+
+function inferErrorCode(input = {}) {
+  const probe = [input.rawCode, input.message, input.cause?.message]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  if (probe.includes('formula') || probe.includes('#ref!') || probe.includes('#name?')) {
+    return 'UNINTERPRETABLE_FORMULAS';
+  }
+  if (probe.includes('limit') || probe.includes('too large') || probe.includes('max cells')) {
+    return 'WORKBOOK_TOO_LARGE';
+  }
+  if (probe.includes('export') || probe.includes('critical conflict')) {
+    return 'CRITICAL_CONFLICTS_PENDING_EXPORT';
+  }
+
+  return input.fallbackCode || 'CORRUPT_FILE';
 }

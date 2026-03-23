@@ -171,3 +171,12 @@ export function logEngineError(logger, engineError) {
   console.error(payload);
   return payload;
 }
+
+export {
+  ERROR_DEFINITIONS,
+  buildError,
+  inferErrorCode,
+  normalizeEngineError,
+  logEngineError,
+  sanitizeForUser,
+};
