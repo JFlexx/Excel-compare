@@ -210,14 +210,10 @@ export function applyDecisionToSession(session, decision) {
     status: "Ready"
   };
 }
-'use strict';
-
-const { apply_merge_decisions, buildXlsxPayload } = require('./apply-merge-decisions');
-
-module.exports = {
+export {
   apply_merge_decisions,
   buildXlsxPayload,
-};
+} from './apply-merge-decisions.js';
 export {
   compare_workbooks,
   compare_worksheets,
