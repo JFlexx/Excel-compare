@@ -1,20 +1,36 @@
 import { apply_merge_decisions, buildXlsxPayload } from './apply-merge-decisions.js';
 
 const SUPPORTED_TYPES = new Set(["string", "number", "boolean", "formula"]);
+'use strict';
+
+import { apply_merge_decisions, buildXlsxPayload } from './apply-merge-decisions.js';
+export { compare_workbooks, compare_worksheets, compare_cells } from './diff.js';
+export {
+  getWorksheetDimensions,
+  iterateWorksheets,
+  loadAndNormalizeWorkbook,
+  loadWorkbook,
+  normalizeExcelCellToCanonical,
+  normalizeWorkbook,
+  normalizeWorksheet,
+  shouldIgnoreCell,
+} from './xlsx-normalizer.js';
+
+const SUPPORTED_TYPES = new Set(['string', 'number', 'boolean', 'formula']);
 
 function inferCellType(conflict) {
   const candidateTypes = [conflict?.sourceA?.type, conflict?.sourceB?.type].filter(Boolean);
   const preferred = candidateTypes.find((type) => SUPPORTED_TYPES.has(type));
-  return preferred ?? "string";
+  return preferred ?? 'string';
 }
 
 function coerceManualEditValue(rawValue, expectedType) {
-  if (expectedType === "number") {
+  if (expectedType === 'number') {
     const trimmed = String(rawValue).trim();
     if (trimmed.length === 0) {
       return {
         ok: false,
-        error: "Introduce un número válido para resolver este conflicto."
+        error: 'Introduce un número válido para resolver este conflicto.',
       };
     }
 
@@ -22,69 +38,69 @@ function coerceManualEditValue(rawValue, expectedType) {
     if (!Number.isFinite(numericValue)) {
       return {
         ok: false,
-        error: "Introduce un número válido para resolver este conflicto."
+        error: 'Introduce un número válido para resolver este conflicto.',
       };
     }
 
     return {
       ok: true,
-      valueType: "number",
+      valueType: 'number',
       parsedValue: numericValue,
-      displayValue: trimmed
+      displayValue: trimmed,
     };
   }
 
-  if (expectedType === "boolean") {
+  if (expectedType === 'boolean') {
     const normalized = String(rawValue).trim().toLowerCase();
     const booleanMap = new Map([
-      ["true", true],
-      ["false", false],
-      ["verdadero", true],
-      ["falso", false],
-      ["sí", true],
-      ["si", true],
-      ["no", false],
-      ["1", true],
-      ["0", false]
+      ['true', true],
+      ['false', false],
+      ['verdadero', true],
+      ['falso', false],
+      ['sí', true],
+      ['si', true],
+      ['no', false],
+      ['1', true],
+      ['0', false],
     ]);
 
     if (!booleanMap.has(normalized)) {
       return {
         ok: false,
-        error: 'Usa un valor booleano válido: true/false, sí/no o 1/0.'
+        error: 'Usa un valor booleano válido: true/false, sí/no o 1/0.',
       };
     }
 
     return {
       ok: true,
-      valueType: "boolean",
+      valueType: 'boolean',
       parsedValue: booleanMap.get(normalized),
-      displayValue: booleanMap.get(normalized) ? "TRUE" : "FALSE"
+      displayValue: booleanMap.get(normalized) ? 'TRUE' : 'FALSE',
     };
   }
 
-  if (expectedType === "formula") {
+  if (expectedType === 'formula') {
     const trimmed = String(rawValue).trim();
-    if (!trimmed.startsWith("=")) {
+    if (!trimmed.startsWith('=')) {
       return {
         ok: false,
-        error: "Las fórmulas manuales deben empezar por '='."
+        error: "Las fórmulas manuales deben empezar por '='.",
       };
     }
 
     return {
       ok: true,
-      valueType: "formula",
+      valueType: 'formula',
       parsedValue: trimmed,
-      displayValue: trimmed
+      displayValue: trimmed,
     };
   }
 
   return {
     ok: true,
-    valueType: "string",
+    valueType: 'string',
     parsedValue: String(rawValue),
-    displayValue: String(rawValue)
+    displayValue: String(rawValue),
   };
 }
 
@@ -96,7 +112,7 @@ export function validateManualEdit(conflict, rawValue) {
     return {
       valid: false,
       expectedType,
-      error: validation.error
+      error: validation.error,
     };
   }
 
@@ -105,7 +121,7 @@ export function validateManualEdit(conflict, rawValue) {
     expectedType,
     parsedValue: validation.parsedValue,
     displayValue: validation.displayValue,
-    valueType: validation.valueType
+    valueType: validation.valueType,
   };
 }
 
@@ -121,29 +137,29 @@ export function createManualEditDecision({ conflict, rawValue, decidedBy, decide
     location: conflict.location,
     value: validation.parsedValue,
     displayValue: validation.displayValue,
-    type: validation.valueType
+    type: validation.valueType,
   };
 
   return {
     id: `decision:${targetId}:manual_edit`,
-    nodeType: "MergeDecision",
-    targetType: "cell",
+    nodeType: 'MergeDecision',
+    targetType: 'cell',
     targetId,
     location: conflict.location,
     changeType: conflict.changeType,
     sourceA: conflict.sourceA,
     sourceB: conflict.sourceB,
-    userDecision: "manual_edit",
-    finalState: "merged",
+    userDecision: 'manual_edit',
+    finalState: 'merged',
     decidedBy,
     decidedAt,
     manualEdit: {
       rawValue: String(rawValue),
       value: validation.parsedValue,
       displayValue: validation.displayValue,
-      type: validation.valueType
+      type: validation.valueType,
     },
-    preview
+    preview,
   };
 }
 
@@ -161,12 +177,12 @@ export function applyDecisionToSession(session, decision) {
       userDecision: decision.userDecision,
       finalState: decision.finalState,
       resolution: {
-        type: "manual_edit",
+        type: 'manual_edit',
         value: decision.manualEdit.value,
         displayValue: decision.manualEdit.displayValue,
-        valueType: decision.manualEdit.type
-      }
-    })
+        valueType: decision.manualEdit.type,
+      },
+    }),
   );
 
   const updatedSheets = updateCollection(session.worksheetDiffs ?? [], () => true, (sheet) => ({
@@ -182,10 +198,10 @@ export function applyDecisionToSession(session, decision) {
           value: decision.manualEdit.value,
           displayValue: decision.manualEdit.displayValue,
           type: decision.manualEdit.type,
-          origin: "manual_edit"
-        }
-      })
-    )
+          origin: 'manual_edit',
+        },
+      }),
+    ),
   }));
 
   const mergedCellPreviews = {
@@ -194,9 +210,9 @@ export function applyDecisionToSession(session, decision) {
       value: decision.manualEdit.value,
       displayValue: decision.manualEdit.displayValue,
       type: decision.manualEdit.type,
-      origin: "manual_edit",
-      location: decision.location
-    }
+      origin: 'manual_edit',
+      location: decision.location,
+    },
   };
 
   return {
@@ -207,12 +223,17 @@ export function applyDecisionToSession(session, decision) {
     resultPreview: {
       ...(session.resultPreview ?? {}),
       cells: mergedCellPreviews,
-      updatedAt: decision.decidedAt
+      updatedAt: decision.decidedAt,
     },
-    status: "Ready"
+    status: 'Ready',
   };
 }
 
+export { apply_merge_decisions, buildXlsxPayload } from './apply-merge-decisions.js';
+export {
+  apply_merge_decisions,
+  buildXlsxPayload,
+} from './apply-merge-decisions.js';
 export {
   compare_workbooks,
   compare_worksheets,
@@ -222,3 +243,5 @@ export {
   apply_merge_decisions,
   buildXlsxPayload,
 };
+
+export { apply_merge_decisions, buildXlsxPayload };

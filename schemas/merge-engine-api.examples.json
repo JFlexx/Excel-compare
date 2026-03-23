@@ -10,8 +10,23 @@
       "comparisonOptions": {
         "detectFormulaChanges": true,
         "detectFormatChanges": false,
-        "includeDefinedNames": true,
+        "includeDefinedNames": false,
         "conflictStrategy": "manual_first"
+      },
+      "pilotScope": {
+        "supportedChangeTypes": [
+          "value_change",
+          "simple_formula_change",
+          "sheet_added_simple",
+          "sheet_removed_simple"
+        ],
+        "unsupportedFeatures": [
+          "macros",
+          "complex_pivot_tables",
+          "embedded_objects",
+          "advanced_formats",
+          "ambiguous_structural_changes"
+        ]
       }
     },
     "response": {
@@ -28,8 +43,17 @@
         "comparisonOptions": {
           "detectFormulaChanges": true,
           "detectFormatChanges": false,
-          "includeDefinedNames": true,
+          "includeDefinedNames": false,
           "conflictStrategy": "manual_first"
+        },
+        "pilotScope": {
+          "supportedChangeTypes": [
+            "value_change",
+            "simple_formula_change",
+            "sheet_added_simple",
+            "sheet_removed_simple"
+          ],
+          "manualResolution": "basic_only"
         }
       }
     }

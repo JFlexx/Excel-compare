@@ -1,207 +1,133 @@
-# MVP merge Excel: casos de uso y no-objetivos
+# MVP merge Excel: subconjunto piloto realmente entregable
 
 ## Propósito del documento
-Este documento define el alcance inicial del **MVP merge Excel** para alinear a negocio, producto e ingeniería sobre:
-- qué cambios debe detectar el sistema;
-- qué se considera **conflicto celda** y qué se considera auto-resoluble;
-- qué acciones debe poder ejecutar el usuario;
-- qué casos límite deben contemplarse desde el inicio; y
-- qué criterios de aceptación deben ser visibles para negocio y usuarios internos.
+Este documento redefine el alcance del **MVP merge Excel** para dejar un piloto que sí pueda entregarse con un nivel razonable de confianza, **sin depender de soporte total de Excel**.
 
-## Objetivo del MVP
-Permitir comparar dos versiones de un archivo Excel y construir un resultado final asistido, mostrando diferencias relevantes y permitiendo resolver conflictos con acciones simples como **aceptar izquierda/derecha** o editar el resultado final.
+La prioridad de este piloto es:
+- resolver casos frecuentes y comprensibles para usuarios internos;
+- bloquear con mensajes claros los casos fuera de alcance;
+- mantener trazabilidad de decisiones; y
+- evitar prometer compatibilidad total con estructuras avanzadas de Excel.
 
-## Alcance funcional del MVP
+## Objetivo del piloto
+Permitir comparar dos versiones de un archivo Excel y construir un resultado final asistido para un subconjunto acotado de escenarios, mostrando diferencias relevantes y permitiendo resolverlas con acciones simples como **aceptar izquierda**, **aceptar derecha** o **editar manualmente** cuando el caso sea básico.
 
-### 1. Tipos de cambio a detectar
-El MVP debe detectar y presentar, como mínimo, los siguientes tipos de cambio:
+## Definición del subconjunto piloto
 
-#### 1.1 Nivel libro
-- Archivo agregado o faltante en una comparación esperada.
-- Metadatos básicos del libro que afecten la comparación.
-- Cambios en estructura global del workbook cuando impliquen hojas agregadas, eliminadas o renombradas.
+### 1. Casos que sí entran en el piloto
+El piloto cubre únicamente estos escenarios.
 
-#### 1.2 Nivel hoja
-- Hoja agregada.
-- Hoja eliminada.
-- Hoja renombrada.
-- Hoja movida de posición cuando eso afecte la lectura del usuario.
+#### 1.1 Cambios de valor
+- Cambio de valor en una celda existente en ambos lados.
+- Cambio entre celda vacía y celda informada cuando el mapeo por coordenada es claro.
+- Cambios simples de texto, número, fecha o booleano visibles como diferencia celda a celda.
 
-#### 1.3 Nivel celda
-- Cambio de valor en una celda.
-- Celda agregada o eliminada dentro del rango usado.
-- Cambio entre valor vacío y valor informado.
+#### 1.2 Fórmulas simples
+- Fórmula agregada, eliminada o modificada en una celda individual.
+- Fórmulas lineales o aritméticas simples cuya representación puede mostrarse de forma transparente.
+- Edición manual básica del resultado final cuando el conflicto sigue siendo de una sola celda y el usuario ingresa un valor o una fórmula simple.
 
-#### 1.4 Fórmulas
-- Fórmula agregada.
-- Fórmula eliminada.
-- Fórmula modificada.
-- Diferencia entre mostrar el valor calculado y la fórmula subyacente.
-- Fórmulas inválidas o rotas detectables por Excel.
+#### 1.3 Hojas agregadas o eliminadas sencillas
+- Hoja agregada en un solo lado cuando no hay duda de identidad.
+- Hoja eliminada en un solo lado cuando no hay duda de identidad.
+- Aplicación de **aceptar izquierda/derecha** para conservar o descartar una hoja completa en estos casos simples.
 
-#### 1.5 Formato
-- Cambios de formato relevantes para negocio, por ejemplo:
-  - negrita, cursiva o subrayado;
-  - color de fondo o color de fuente;
-  - formato numérico;
-  - bordes básicos.
-- No es necesario en el MVP cubrir todos los atributos de estilo de Excel si no impactan decisiones del usuario.
+#### 1.4 Resolución manual básica
+- **Aceptar izquierda** y **aceptar derecha** por diferencia individual.
+- **Aceptar izquierda** y **aceptar derecha** por bloque homogéneo simple.
+- **Editar manualmente** solo para conflictos de valor o fórmulas simples de una sola celda.
+- **Deshacer** de decisiones tomadas durante la sesión actual.
 
-#### 1.6 Filas y columnas
-- Filas agregadas o eliminadas.
-- Columnas agregadas o eliminadas.
-- Cambios que desplacen celdas y alteren el mapeo esperado.
-- Ocultamiento o visibilidad de filas/columnas si impacta la lectura comparativa.
+## 2. Casos que quedan explícitamente fuera del piloto
+Los siguientes casos deben considerarse **no soportados** en esta versión y deben bloquear la comparación o marcar el archivo como fuera de alcance:
+- macros y código VBA;
+- tablas dinámicas complejas;
+- objetos embebidos o flotantes, incluidos gráficos, imágenes ancladas, comentarios enriquecidos o controles;
+- formatos avanzados o estilos cuyo merge requiera semántica propia de Excel;
+- casos estructurales ambiguos, por ejemplo renombrados dudosos, desplazamientos complejos, celdas combinadas que rompan el mapeo o cambios simultáneos incompatibles.
 
-#### 1.7 Tablas
-- Tabla agregada o eliminada.
-- Cambios en estructura de tabla (columnas, encabezados, rangos).
-- Cambios dentro de celdas pertenecientes a una tabla.
+## 3. Reglas operativas del piloto
 
-## Definiciones operativas: conflicto vs cambio auto-resoluble
+### 3.1 Qué se considera conflicto dentro del piloto
+Se considera **conflicto** todo caso soportado donde el sistema no puede decidir automáticamente qué versión debe prevalecer.
 
-### 2. Qué se considera conflicto
-Se considera **conflicto** todo caso donde el sistema no puede decidir de forma segura qué versión debe prevalecer en el resultado final.
+Ejemplos:
+- La misma celda tiene valores distintos a izquierda y derecha.
+- La misma celda tiene fórmulas simples distintas a izquierda y derecha.
+- Una hoja agregada o eliminada sencilla requiere decisión de conservación.
 
-Ejemplos de conflicto:
-- La misma celda tiene valores distintos a izquierda y derecha y no existe regla determinística aprobada.
-- La misma celda tiene fórmulas distintas a izquierda y derecha.
-- Un lado elimina una fila/columna y el otro modifica contenido dentro de esa misma fila/columna.
-- Una hoja fue renombrada en un lado y modificada estructuralmente de forma incompatible en el otro.
-- Existen cambios de formato y contenido simultáneos sobre el mismo rango y ambos son significativos.
-- Una tabla cambia de estructura en ambos lados de forma incompatible.
+### 3.2 Qué se considera fuera de alcance
+Se considera **fuera de alcance del piloto** todo caso donde el sistema detecta una estructura o característica que impediría una resolución segura y explicable.
 
-### 3. Qué se considera cambio auto-resoluble
-Se considera **cambio auto-resoluble** todo caso donde el sistema puede aplicar una decisión segura y explicable sin pedir intervención manual.
+Ejemplos:
+- El archivo contiene macros.
+- El cambio ocurre dentro de una tabla dinámica compleja.
+- Hay objetos embebidos relevantes en el rango afectado.
+- El caso depende de merge de formato avanzado.
+- No puede determinarse con confianza si una hoja fue renombrada, movida o reemplazada.
 
-Ejemplos de cambio auto-resoluble:
-- Un elemento existe solo en un lado porque fue agregado allí y el otro lado no lo tocó.
-- Un lado modifica formato y el otro no realizó ningún cambio sobre ese mismo alcance.
-- Una hoja fue agregada en un lado y no existe evidencia de conflicto de identidad con otra hoja.
-- Una fila o columna fue agregada en un lado y no colisiona con cambios del otro lado.
-- Una celda pasa de vacía a informada en un solo lado y el otro lado se mantiene sin cambios.
+### 3.3 Regla de transparencia
+Toda auto-resolución o bloqueo debe quedar explicada con una regla visible para el usuario interno, producto y soporte. El piloto no debe fallar en silencio ni intentar “adivinar” intención estructural compleja.
 
-### 4. Regla de transparencia
-Todo cambio auto-resoluble debe quedar visible como decisión aplicada por el sistema, para que negocio y usuarios internos entiendan:
-- qué se resolvió automáticamente;
-- con qué regla; y
-- cómo revertirlo si fuera necesario.
+## 4. Implicaciones obligatorias para UI y mensajes de error
+Estas restricciones no pueden quedar solo en documentación.
 
-## Acciones de usuario permitidas
-El MVP debe permitir las siguientes acciones explícitas:
+La UI del piloto debe mostrar explícitamente:
+- un banner o bloque de **alcance del piloto** en carga y workspace;
+- los tipos de cambio soportados: **valor**, **fórmula simple**, **hoja agregada**, **hoja eliminada**;
+- que la edición manual está limitada a **valor o fórmula simple**;
+- que exportar solo es posible cuando no quedan conflictos soportados pendientes y no hay bloqueos por casos fuera del piloto.
 
-### 5. Resolver por lado
-- **Aceptar izquierda** para aplicar la versión izquierda al resultado final.
-- **Aceptar derecha** para aplicar la versión derecha al resultado final.
+Mensajes mínimos obligatorios:
+- `Este archivo queda fuera del piloto. Solo admitimos cambios de valor, fórmulas simples y hojas agregadas o eliminadas de forma sencilla.`
+- `Detectamos macros, tablas dinámicas complejas, objetos embebidos o formatos avanzados. Este caso no está soportado en el piloto.`
+- `La estructura del libro es ambigua para este piloto. Revisa hojas renombradas, celdas combinadas o movimientos complejos antes de volver a intentar.`
+- `La edición manual básica solo está disponible para valores y fórmulas simples.`
 
-Estas acciones deben existir al menos para:
-- conflicto celda;
-- conflicto de rango simple;
-- bloques homogéneos de cambios.
+## 5. Ajustes requeridos en tests y ejemplos
+Los tests y ejemplos del repositorio deben concentrarse en este slice concreto.
 
-### 6. Editar resultado final
-- El usuario debe poder editar manualmente el valor o fórmula final del resultado.
-- La edición manual debe marcar el ítem como resuelto manualmente.
-- Debe quedar claro que el valor final ya no coincide exactamente con izquierda ni derecha.
+### 5.1 Tests mínimos del piloto
+- Caso de cambio simple de valor.
+- Caso de fórmula simple editable manualmente.
+- Caso de hoja agregada sencilla.
+- Caso de hoja eliminada sencilla.
+- Caso bloqueado por característica fuera del piloto.
+- Caso bloqueado por estructura ambigua.
 
-### 7. Deshacer
-- El usuario debe poder deshacer la última acción.
-- Idealmente debe poder deshacer múltiples acciones dentro de la sesión actual.
-- Deshacer debe cubrir tanto **aceptar izquierda/derecha** como edición manual y aplicación por bloque.
+### 5.2 Ejemplos de referencia
+Los ejemplos de UI, payloads y sesiones deben usar nomenclatura y conflictos del piloto, evitando escenarios que sugieran soporte de formatos avanzados, macros o tablas dinámicas complejas.
 
-### 8. Aplicar por bloque
-- El usuario debe poder aplicar una misma decisión sobre un conjunto agrupado de diferencias.
-- Ejemplos:
-  - aceptar derecha para todas las celdas cambiadas en una fila;
-  - aceptar izquierda para una hoja completa agregada o eliminada;
-  - aceptar una decisión sobre un bloque continuo de celdas.
+## 6. Definición de “pilot ready”
 
-## Casos de uso principales del MVP
+### 6.1 Producto
+El piloto está **product ready** cuando:
+- el alcance soportado y no soportado está visible en la UI;
+- el flujo principal permite cargar, comparar, resolver y exportar en casos soportados;
+- la exportación se bloquea de forma entendible ante conflictos pendientes o casos fuera de alcance;
+- la edición manual básica funciona solo en el slice definido;
+- los textos y estados no prometen compatibilidad general con Excel.
 
-### 9. Casos de uso esperados
-1. **Comparar dos libros y listar diferencias relevantes**.
-2. **Resolver un conflicto celda** eligiendo aceptar izquierda/derecha.
-3. **Aplicar una resolución masiva** sobre un bloque simple de cambios homogéneos.
-4. **Editar el resultado final** cuando ninguna de las dos versiones sea suficiente.
-5. **Revisar cambios auto-resueltos** antes de exportar o guardar el resultado.
-6. **Generar un archivo final** con las decisiones aplicadas.
+### 6.2 Negocio
+El piloto está **business ready** cuando:
+- existe una promesa comercial y operativa explícita basada en este subconjunto;
+- se validó con ejemplos reales de cambios de valor, fórmulas simples y hojas agregadas/eliminadas sencillas;
+- el usuario interno entiende qué puede resolver solo y qué debe reenviar o corregir fuera del sistema;
+- hay criterios de éxito medibles, por ejemplo tasa de comparación exitosa dentro del slice y porcentaje de exportaciones sin intervención de soporte.
 
-### 9.1 Requisitos mínimos del flujo final de exportación
-- El sistema debe bloquear la exportación si quedan conflictos pendientes.
-- El sistema debe generar el `.xlsx` final únicamente después de validar la sesión completa.
-- El sistema debe proponer un nombre de archivo sugerido editable por el usuario.
-- El sistema debe mostrar un resumen visible con:
-  - cambios aceptados desde izquierda/base,
-  - cambios aceptados desde derecha/comparado,
-  - ediciones manuales,
-  - hojas afectadas,
-  - conflictos resueltos,
-  - decisiones por tipo.
-- Ese resumen debe poder reutilizarse como base de auditoría interna.
+### 6.3 Soporte
+El piloto está **support ready** cuando:
+- cada bloqueo muestra causa entendible y siguiente paso sugerido;
+- existe telemetría mínima para identificar archivo, hoja, operación y motivo de bloqueo;
+- soporte dispone de una lista corta de casos aceptados vs no aceptados;
+- soporte puede distinguir entre error técnico, límite operativo y caso fuera del piloto sin inspeccionar stack traces ni detalles internos.
 
-## No-objetivos del MVP
-Los siguientes puntos quedan explícitamente fuera del MVP, salvo que negocio los priorice después:
-- Colaboración multiusuario en tiempo real.
-- Reglas avanzadas configurables por cliente o por dominio.
-- Cobertura total de todos los formatos, estilos, macros y objetos embebidos de Excel.
-- Soporte completo y confiable para todos los gráficos, comentarios, validaciones, slicers y objetos flotantes.
-- Resolución semántica inteligente de fórmulas complejas más allá de reglas básicas y transparentes.
-- Integración con flujos empresariales externos, aprobaciones o auditoría avanzada.
-- Comparación y merge de más de dos versiones simultáneamente.
-- Detección perfecta de intención del usuario en cambios estructurales complejos.
+## 7. Criterios de aceptación visibles
+- El usuario ve claramente qué casos admite el piloto y cuáles no.
+- La lista de diferencias usa solo tipos de cambio que el piloto realmente resuelve.
+- La UI impide editar manualmente conflictos estructurales o fuera de alcance.
+- Los errores usan lenguaje de negocio y no exponen detalles técnicos crudos.
+- El resultado exportado refleja exactamente las decisiones visibles del usuario dentro del alcance soportado.
 
-## Casos límite a considerar desde el inicio
-
-### 10. Hojas renombradas
-- El sistema debe intentar distinguir entre hoja renombrada y hoja eliminada + hoja nueva.
-- Si la identidad no es suficientemente confiable, debe marcarse como conflicto estructural.
-
-### 11. Celdas combinadas
-- Las celdas combinadas pueden romper el mapeo simple por coordenadas.
-- El MVP debe al menos detectarlas y tratarlas como caso especial visible.
-- Si impiden una resolución segura, deben elevarse a conflicto.
-
-### 12. Fórmulas rotas
-- Si una fórmula devuelve error o referencia inválida, el sistema debe mostrarlo explícitamente.
-- Si la fórmula rota aparece solo en un lado, no debe auto-resolverse sin visibilidad.
-
-### 13. Tablas dinámicas
-- Las tablas dinámicas deben tratarse como objeto especial de soporte limitado.
-- En el MVP puede bastar con detectar su presencia y advertir soporte parcial.
-- Si una diferencia dentro de una tabla dinámica no puede explicarse con seguridad, debe marcarse como no soportada o conflictiva.
-
-### 14. Archivos grandes
-- El sistema debe seguir siendo usable con archivos grandes, aunque el MVP puede imponer límites operativos claros.
-- Deben definirse umbrales visibles, por ejemplo:
-  - cantidad máxima de hojas;
-  - cantidad máxima de celdas utilizadas;
-  - tiempo objetivo de carga/comparación.
-- Si el archivo excede el alcance soportado, el sistema debe informar el motivo de forma entendible.
-
-## Criterios de aceptación visibles para negocio y usuarios internos
-
-### 15. Criterios funcionales
-- El usuario puede identificar claramente qué cambió en libro, hoja, celda, fórmula, formato, fila/columna y tablas.
-- El usuario puede distinguir entre cambio auto-resoluble y conflicto.
-- El usuario puede ejecutar **aceptar izquierda/derecha** sobre una diferencia individual.
-- El usuario puede editar el resultado final en al menos conflictos de celda o fórmula simple.
-- El usuario puede deshacer acciones recientes.
-- El usuario puede aplicar una decisión por bloque en escenarios simples.
-
-### 16. Criterios de experiencia
-- La interfaz usa términos comprensibles y consistentes, incluyendo: **MVP merge Excel**, **conflicto celda**, **aceptar izquierda/derecha**.
-- Las diferencias auto-resueltas quedan visibles y auditables dentro de la sesión.
-- Los conflictos pendientes quedan resaltados y no se confunden con cambios ya resueltos.
-- El estado final deja claro si el archivo está listo para exportar o si quedan conflictos por resolver.
-- Antes de exportar, el usuario ve un resumen final entendible y auditable de lo que saldrá en el workbook.
-
-### 17. Criterios operativos
-- El sistema no bloquea ni falla silenciosamente ante hojas renombradas, celdas combinadas, fórmulas rotas, tablas dinámicas o archivos grandes.
-- Cuando un caso no está soportado por el MVP, el sistema lo comunica explícitamente.
-- El resultado final exportado refleja exactamente las decisiones visibles del usuario.
-- La exportación genera además un resumen visible o exportable con hojas afectadas, conflictos resueltos y decisiones por tipo.
-
-## Supuestos para iteraciones futuras
-- En futuras versiones podrán agregarse reglas de auto-resolución configurables.
-- También podrá ampliarse la cobertura de objetos complejos de Excel.
-- La prioridad del MVP es claridad de resolución, no cobertura absoluta del formato Excel.
+## 8. Decisión de producto para esta iteración
+La prioridad del MVP/piloto es **claridad y confiabilidad sobre cobertura**. Si un caso no entra con seguridad en el subconjunto anterior, debe tratarse como **no soportado en el piloto**.
