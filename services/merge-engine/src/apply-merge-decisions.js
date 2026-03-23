@@ -416,16 +416,39 @@ function apply_merge_decisions(leftWorkbookInput, rightWorkbookInput, diff, deci
     }
   }
 
+  const appliedCellDecisionIds = new Set(appliedDecisionIds);
+
   for (const conflict of conflicts) {
     const decision = findDecisionForConflict(conflict, coverage);
-    if (isDecisionResolved(decision)) {
-      resolvedConflicts.push({
-        conflictId: conflict.id,
-        resolution: normalizeDecisionType(decision),
-        finalState: decisionToState(decision),
-      });
+    if (!isDecisionResolved(decision)) {
+      continue;
     }
+
+    for (const cellRef of conflict.cellRefs || []) {
+      const cellDiff = cellDiffs.find((item) => item.id === cellRef);
+      if (!cellDiff) {
+        continue;
+      }
+
+      const explicitCellDecision = coverage.byTarget.get(cellDiff.id) || coverage.byCell.get(cellDiff.id);
+      if (explicitCellDecision && explicitCellDecision.id !== decision.id) {
+        continue;
+      }
+
+      applyCellDecision(resultWorkbook, leftWorkbook, rightWorkbook, cellDiff, decision, appliedChanges);
+      if (decision.id) {
+        appliedCellDecisionIds.add(decision.id);
+      }
+    }
+
+    resolvedConflicts.push({
+      conflictId: conflict.id,
+      resolution: normalizeDecisionType(decision),
+      finalState: decisionToState(decision),
+    });
   }
+
+  appliedDecisionIds.splice(0, appliedDecisionIds.length, ...appliedCellDecisionIds);
 
   sortWorksheets(resultWorkbook);
 
