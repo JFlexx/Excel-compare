@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Comparador de libros Excel</title>
     <link rel="stylesheet" href="./styles.css" />
+    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
   </head>
   <body>
     <div class="app-shell">
@@ -32,6 +33,18 @@
         </div>
       </header>
 
+      <section class="host-banner" id="host-banner" aria-live="polite">
+        <div>
+          <div class="host-banner-header">
+            <strong>Estado del host</strong>
+            <span class="chip chip-neutral" id="host-badge">Cargando</span>
+          </div>
+          <p id="host-message">Conectando con Excel y cargando la merge session…</p>
+          <p class="host-details" id="host-details"></p>
+        </div>
+        <button class="action-button secondary host-action" id="reconnect-host" type="button">Reconectar</button>
+      </section>
+
       <main class="layout-grid">
         <section class="panel panel-files" aria-labelledby="files-title">
           <div class="panel-heading">
@@ -54,6 +67,10 @@
           <div class="file-card-group" id="file-summary"></div>
 
           <div class="compare-note">
+            <p>
+              <strong>Workbook activo:</strong>
+              <span id="active-workbook">—</span>
+            </p>
             <p>
               <strong>Hoja activa:</strong>
               <span id="active-sheet">—</span>
