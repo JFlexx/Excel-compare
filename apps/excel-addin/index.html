@@ -3,38 +3,32 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Comparador de libros Excel</title>
+    <title>Excel Compare · Task pane MVP</title>
     <link rel="stylesheet" href="./styles.css" />
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
   </head>
   <body>
     <div class="app-shell">
       <header class="app-header">
         <div>
-          <p class="eyebrow">Excel Compare · Uso interno</p>
-          <h1>Resolución de conflictos del piloto</h1>
+          <p class="eyebrow">Excel Compare · MVP</p>
+          <h1>Task pane de resolución de conflictos</h1>
           <p class="intro">
-            Revisa los libros comparados, selecciona un conflicto soportado por el piloto y decide qué valor conservar.
-          <h1>Sesión inicial de comparación</h1>
-          <p class="intro">
-            Revisa los libros comparados, selecciona un conflicto y consulta el historial cronológico enlazado con cada decisión.
-            Revisa los libros comparados, guarda checkpoints de la sesión y decide si quieres reanudar o reiniciar el merge.
-            Selecciona el workbook base y el workbook comparado para normalizarlos, ejecutar el diff del MVP y guardar la sesión inicial.
+            Carga una sesión demo del merge, revisa cada conflicto y decide izquierda, derecha o una edición manual básica antes de exportar.
           </p>
         </div>
-        <div class="status-summary" aria-label="Resumen de la comparación">
+        <div class="status-summary" aria-label="Resumen de la sesión">
           <div>
             <span class="summary-label">Hojas afectadas</span>
             <strong id="summary-sheets">0</strong>
           </div>
           <div>
-            <span class="summary-label">Conflictos pendientes</span>
+            <span class="summary-label">Pendientes</span>
             <strong id="summary-pending">0</strong>
           </div>
           <div>
-            <span class="summary-label">Cambios auto-resueltos</span>
-            <strong id="summary-auto-resolved">0</strong>
+            <span class="summary-label">Resueltos</span>
+            <strong id="summary-resolved">0</strong>
           </div>
           <div>
             <span class="summary-label">Progreso</span>
@@ -43,353 +37,152 @@
         </div>
       </header>
 
-      <section class="pilot-banner" aria-label="Alcance del piloto">
-        <div>
-          <p class="banner-eyebrow">Alcance del piloto</p>
-          <h2>Solo resolvemos cambios de valor, fórmulas simples y hojas agregadas o eliminadas de forma sencilla.</h2>
-          <p>
-            Si detectamos macros, tablas dinámicas complejas, objetos embebidos, formatos avanzados o casos estructurales ambiguos,
-            bloqueamos el flujo con un mensaje claro en lugar de intentar un merge inseguro.
-          </p>
-        </div>
-        <ul class="scope-list">
-          <li><strong>Soportado:</strong> valor</li>
-          <li><strong>Soportado:</strong> fórmula simple</li>
-          <li><strong>Soportado:</strong> hoja agregada/eliminada</li>
-          <li><strong>Manual básico:</strong> solo valor o fórmula simple</li>
-        </ul>
-      <section class="panel session-resume-panel" aria-labelledby="session-resume-title">
-        <div class="panel-heading">
-          <div>
-            <h2 id="session-resume-title">Reanudar sesión</h2>
-            <p class="session-copy" id="session-status-text">
-              Revisa si la sesión guardada coincide con los workbooks actuales antes de reanudar.
-            </p>
-          </div>
-          <span class="chip chip-neutral" id="session-status-chip">Sin sesión</span>
-        </div>
-
-        <div class="session-meta-grid">
-          <div>
-            <span class="meta-label">Última actualización</span>
-            <strong id="session-last-updated">—</strong>
-          </div>
-          <div>
-            <span class="meta-label">Progreso guardado</span>
-            <strong id="session-progress">—</strong>
-          </div>
-        </div>
-
-        <div class="session-actions">
-          <button id="resume-action" class="action-button primary" type="button">Reanudar sesión</button>
-          <button id="discard-resume" class="action-button secondary" type="button">Descartar y empezar de nuevo</button>
-        </div>
-      <section class="host-banner" id="host-banner" aria-live="polite">
-        <div>
-          <div class="host-banner-header">
-            <strong>Estado del host</strong>
-            <span class="chip chip-neutral" id="host-badge">Cargando</span>
-          </div>
-          <p id="host-message">Conectando con Excel y cargando la merge session…</p>
-          <p class="host-details" id="host-details"></p>
-        </div>
-        <button class="action-button secondary host-action" id="reconnect-host" type="button">Reconectar</button>
-      </section>
-
       <main class="layout-grid">
-        <section class="panel panel-files" aria-labelledby="files-title">
+        <section class="panel" aria-labelledby="compare-title">
           <div class="panel-heading">
-            <h2 id="files-title">Entrada de workbooks</h2>
-            <span class="chip chip-neutral">Flujo MVP</span>
+            <div>
+              <h2 id="compare-title">Cargar sesión</h2>
+              <p class="panel-copy">Usa nombres de workbook opcionales para personalizar la sesión demo del MVP.</p>
+            </div>
+            <span class="chip chip-neutral">Happy path</span>
           </div>
 
           <form id="compare-form" class="compare-form">
-            <label class="field-label" for="base-workbook-path">Ruta del libro base</label>
-            <input id="base-workbook-path" class="text-input" type="text" placeholder="/files/budget.base.xlsx" />
+            <label class="field-label" for="base-workbook-path">Workbook base</label>
+            <input id="base-workbook-path" class="text-input" type="text" placeholder="Ventas_Q1_Base.xlsx" />
 
-            <label class="field-label" for="compared-workbook-path">Ruta del libro comparado</label>
-            <input id="compared-workbook-path" class="text-input" type="text" placeholder="/files/budget.review.xlsx" />
+            <label class="field-label" for="compared-workbook-path">Workbook comparado</label>
+            <input id="compared-workbook-path" class="text-input" type="text" placeholder="Ventas_Q1_Actualizado.xlsx" />
 
-            <button id="run-compare" class="action-button primary" type="submit">Comparar workbooks</button>
-            <p id="compare-status" class="helper-text">Selecciona ambos workbooks para generar la sesión inicial.</p>
-            <p id="compare-error" class="error-banner" hidden></p>
+            <button id="run-compare" class="action-button primary" type="submit">Cargar sesión demo</button>
+            <p id="compare-status" class="helper-text">Sin sesión cargada.</p>
           </form>
 
-          <div class="file-card-group" id="file-summary"></div>
-
-          <div class="compare-note">
-            <p>
-              <strong>Workbook activo:</strong>
-              <span id="active-workbook">—</span>
-            </p>
-            <p>
-              <strong>Hoja activa:</strong>
-              <span id="active-sheet">—</span>
-            </p>
-            <p>
-              <strong>Celda o hoja activa:</strong>
-              <span id="active-cell">—</span>
-            </p>
-          </div>
-
-          <div class="system-message system-message-warning">
-            <h3>Qué queda fuera del piloto</h3>
-            <p>
-              Detectamos macros, tablas dinámicas complejas, objetos embebidos o formatos avanzados. Este caso no está soportado en el piloto.
-            </p>
-          </div>
-
-          <div class="system-message system-message-neutral">
-            <h3>Mensaje de estructura ambigua</h3>
-            <p>
-              La estructura del libro es ambigua para este piloto. Revisa hojas renombradas, celdas combinadas o movimientos complejos antes de volver a intentar.
-            </p>
-          </div>
+          <div id="file-summary" class="file-card-group" aria-live="polite"></div>
         </section>
 
-        <section class="panel panel-conflicts" aria-labelledby="conflicts-title">
+        <section class="panel" aria-labelledby="conflicts-title">
           <div class="panel-heading">
-            <h2 id="conflicts-title">Resumen inicial</h2>
-            <span class="chip chip-alert" id="conflict-counter">0 pendientes</span>
+            <div>
+              <h2 id="conflicts-title">Lista de conflictos</h2>
+              <p class="panel-copy">Filtra y abre un conflicto para trabajar el detalle.</p>
+            </div>
+            <span id="conflict-counter" class="chip chip-alert">Sin conflictos</span>
           </div>
 
-          <ul class="summary-list" id="summary-lines" aria-live="polite">
-            <li>Aún no hay una sesión de comparación generada.</li>
-          </ul>
-
           <div class="conflict-toolbar">
-            <label class="toolbar-label" for="status-filter">Filtrar conflictos</label>
+            <label class="field-label" for="status-filter">Filtro</label>
             <select id="status-filter" class="toolbar-select">
               <option value="all">Todos</option>
               <option value="pending">Pendientes</option>
               <option value="resolved">Resueltos</option>
-              <option value="manual">Editados manualmente</option>
+              <option value="manual">Manual</option>
             </select>
           </div>
 
-          <div class="supported-types" aria-label="Tipos soportados">
-            <span class="chip chip-neutral">Valor distinto</span>
-            <span class="chip chip-neutral">Fórmula simple distinta</span>
-            <span class="chip chip-neutral">Hoja agregada</span>
-            <span class="chip chip-neutral">Hoja eliminada</span>
-          </div>
-
-          <ul class="conflict-list" id="conflict-list" aria-live="polite"></ul>
+          <ul id="conflict-list" class="conflict-list" aria-live="polite">
+            <li class="empty-list">Carga la sesión para ver conflictos.</li>
+          </ul>
         </section>
 
-        <section class="panel panel-detail" aria-labelledby="detail-title">
+        <section class="panel" aria-labelledby="detail-title">
           <div class="panel-heading">
-            <h2 id="detail-title">Detalle e historial</h2>
-            <span class="chip" id="detail-status-chip">Sin selección</span>
+            <div>
+              <h2 id="detail-title">Detalle del conflicto</h2>
+              <p class="panel-copy">Selecciona izquierda, derecha o guarda una edición manual básica.</p>
+            </div>
+            <span id="detail-status-chip" class="chip chip-neutral">Sin selección</span>
           </div>
 
           <div id="detail-empty" class="empty-state">
-            Selecciona un conflicto para ver la hoja, la celda afectada, el historial enlazado y la exportación de soporte.
-            Genera una sesión y selecciona un conflicto para revisar la hoja, la celda afectada y los valores de ambos lados.
+            Carga una sesión y selecciona un conflicto para ver el detalle, decidir el valor final y revisar el estado de exportación.
           </div>
 
           <div id="detail-content" class="detail-content" hidden>
             <div class="detail-meta">
               <div>
-                <span class="meta-label">Hoja</span>
+                <span class="summary-label">Hoja</span>
                 <strong id="detail-sheet">—</strong>
               </div>
               <div>
-                <span class="meta-label">Celda o hoja</span>
+                <span class="summary-label">Celda o bloque</span>
                 <strong id="detail-cell">—</strong>
               </div>
               <div>
-                <span class="meta-label">Descripción</span>
+                <span class="summary-label">Tipo</span>
                 <strong id="detail-type">—</strong>
               </div>
             </div>
 
+            <p id="detail-description" class="detail-description">—</p>
+
             <div class="value-columns">
               <article class="value-card">
                 <div class="value-card-header">
-                  <h3>Libro base</h3>
-                  <span class="value-caption" id="left-book-name">—</span>
+                  <h3>Izquierda</h3>
+                  <span id="left-book-name" class="value-caption">—</span>
                 </div>
                 <pre id="left-value" class="value-box">—</pre>
                 <button id="accept-left" class="action-button secondary" type="button">Aceptar izquierda</button>
-                <button id="apply-left-sheet" class="action-button tertiary" type="button">Aplicar izquierda en hoja</button>
               </article>
 
               <article class="value-card">
                 <div class="value-card-header">
-                  <h3>Libro comparado</h3>
-                  <span class="value-caption" id="right-book-name">—</span>
+                  <h3>Derecha</h3>
+                  <span id="right-book-name" class="value-caption">—</span>
                 </div>
                 <pre id="right-value" class="value-box">—</pre>
-                <div class="action-stack">
-                  <button id="accept-right" class="action-button primary">Aceptar derecha</button>
-                  <button id="auto-resolve" class="action-button tertiary">Aplicar sugerencia automática</button>
-                </div>
                 <button id="accept-right" class="action-button primary" type="button">Aceptar derecha</button>
-                <button id="apply-right-sheet" class="action-button tertiary" type="button">Aplicar derecha en hoja</button>
               </article>
             </div>
 
-            <div class="manual-edit-card">
+            <section class="manual-edit-card" aria-labelledby="manual-edit-title">
               <div class="manual-edit-header">
                 <div>
-                  <h3>Edición manual básica</h3>
-                  <p>Disponible solo para valores y fórmulas simples de una sola celda.</p>
+                  <h3 id="manual-edit-title">Edición manual</h3>
+                  <p>Disponible solo para valores y fórmulas simples.</p>
                 </div>
-                <span class="chip chip-neutral" id="manual-edit-scope">Dentro del alcance</span>
+                <span id="manual-edit-scope" class="chip chip-neutral">Dentro del alcance</span>
               </div>
-              <label class="toolbar-label" for="manual-edit-input">Valor final</label>
-              <textarea id="manual-edit-input" class="manual-edit-input" rows="3" placeholder="Escribe el valor final o una fórmula simple"></textarea>
-              <p id="manual-edit-help" class="manual-edit-help">
-                La edición manual básica solo está disponible para valores y fórmulas simples.
-              </p>
-              <div class="manual-edit-actions">
-                <button id="save-manual" class="action-button primary">Guardar cambio</button>
-                <button id="clear-manual" class="action-button tertiary">Cancelar</button>
-              <div class="panel-heading compact">
-                <h3>Edición manual</h3>
-                <span class="chip chip-neutral">Checkpoint</span>
-              </div>
-              <label class="toolbar-label" for="manual-edit-input">Valor final</label>
-              <input id="manual-edit-input" class="manual-edit-input" type="text" placeholder="Escribe el valor final manual" />
-              <p class="manual-edit-hint" id="manual-edit-hint">Tipo esperado: string.</p>
-              <div class="manual-edit-actions">
-                <button id="manual-edit-save" class="action-button primary" type="button">Guardar edición manual</button>
-                <span class="manual-edit-preview" id="manual-edit-preview">Sin vista previa manual para este conflicto.</span>
-              </div>
-            </div>
 
-            <div class="resolution-summary">
-              <h3>Estado del conflicto</h3>
+              <label class="field-label" for="manual-edit-input">Valor final</label>
+              <textarea id="manual-edit-input" class="manual-edit-input" rows="3" placeholder="Escribe el valor final o una fórmula simple"></textarea>
+              <p id="manual-edit-help" class="manual-edit-help">Puedes guardar un valor final o una fórmula simple que empiece por =.</p>
+
+              <div class="manual-edit-actions">
+                <button id="save-manual" class="action-button primary" type="button">Guardar edición manual</button>
+                <button id="clear-manual" class="action-button tertiary" type="button">Limpiar borrador</button>
+              </div>
+            </section>
+
+            <section class="resolution-summary" aria-labelledby="resolution-title">
+              <h3 id="resolution-title">Estado actual</h3>
               <p id="resolution-message">Pendiente de resolución.</p>
               <div class="resolution-grid">
                 <div>
-                  <span class="meta-label">Valor final</span>
+                  <span class="summary-label">Valor final</span>
                   <strong id="final-value">Pendiente</strong>
                 </div>
                 <div>
-                  <span class="meta-label">Origen del cambio</span>
+                  <span class="summary-label">Origen</span>
                   <strong id="resolution-origin">Sin resolver</strong>
                 </div>
               </div>
-              <p id="resolution-message">Pendiente de revisión.</p>
-            </div>
-
-            <section class="history-panel" aria-labelledby="history-title">
-              <div class="panel-heading panel-heading-subsection">
-                <div>
-                  <h3 id="history-title">Historial cronológico</h3>
-                  <span class="summary-label" id="history-count">0 eventos</span>
-                </div>
-                <select id="history-scope" class="toolbar-select toolbar-select-compact">
-                  <option value="all">Todos los conflictos</option>
-                  <option value="selected">Solo conflicto seleccionado</option>
-                </select>
-              </div>
-
-              <ul class="history-timeline" id="history-timeline"></ul>
             </section>
 
-            <section class="history-panel" aria-labelledby="export-title">
-              <div class="panel-heading panel-heading-subsection">
+            <section class="export-box" aria-labelledby="export-title">
+              <div class="panel-heading compact">
                 <div>
-                  <h3 id="export-title">supportExport</h3>
-                  <span class="summary-label">Resumen plano para negocio y soporte</span>
+                  <h3 id="export-title">Exportación</h3>
+                  <p class="panel-copy">Descarga un resumen JSON cuando ya no queden pendientes.</p>
                 </div>
-                <select id="export-format" class="toolbar-select toolbar-select-compact">
-                  <option value="jsonl">JSON Lines</option>
-                  <option value="csv">CSV</option>
-                </select>
               </div>
-
-              <ul class="export-summary" id="export-summary"></ul>
-              <pre class="export-preview" id="export-preview" aria-label="Vista previa exportable"></pre>
+              <button id="export-button" class="action-button primary" type="button">Exportar resumen</button>
+              <p id="export-message" class="export-message tone-neutral">Carga la sesión para habilitar la exportación.</p>
             </section>
           </div>
         </section>
-
-
-      <section class="panel panel-limits" aria-labelledby="limits-title">
-        <div class="panel-heading">
-          <h2 id="limits-title">Límites operativos visibles</h2>
-          <span class="chip chip-neutral">MVP</span>
-        </div>
-
-        <div class="limits-grid">
-          <article class="limits-card">
-            <h3>Uso estándar</h3>
-            <ul>
-              <li>Hasta 25 MB por archivo.</li>
-              <li>Hasta 25 hojas por libro.</li>
-              <li>Hasta 200.000 celdas relevantes por comparación.</li>
-              <li>Una operación activa por usuario y sesión.</li>
-            </ul>
-          </article>
-          <article class="limits-card">
-            <h3>Escenario extendido</h3>
-            <ul>
-              <li>Hasta 50 MB por archivo con degradación controlada.</li>
-              <li>Preparación ≤ 5 s y análisis inicial ≤ 30 s en el umbral estándar.</li>
-              <li>Si se exceden los límites, la operación se bloquea con mensaje y referencia para soporte.</li>
-            </ul>
-          </article>
-          <article class="limits-card">
-            <h3>Alcance inicial</h3>
-            <ul>
-              <li>Prioridad: Excel Desktop para Windows con Microsoft 365.</li>
-              <li>Alternativa controlada: Excel 2021 LTSC aprobado por TI.</li>
-              <li>Fuera de alcance inicial: Excel para Mac sin validación expresa.</li>
-            </ul>
-          </article>
-        </div>
-      </section>
-
       </main>
-
-      <section class="panel panel-final-review" aria-labelledby="final-review-title">
-        <div class="panel-heading">
-          <h2 id="final-review-title">Revisión final y exportación</h2>
-          <span class="chip chip-neutral">Paso final</span>
-        </div>
-
-        <div id="final-banner" class="banner banner-success"></div>
-
-        <div class="final-grid">
-          <article class="summary-card">
-            <h3>Validaciones de consistencia</h3>
-            <ul id="final-consistency" class="summary-list"></ul>
-          </article>
-
-          <article class="summary-card">
-            <h3>Conflictos resueltos</h3>
-            <ul id="final-resolved-list" class="summary-list"></ul>
-          </article>
-
-          <article class="summary-card">
-            <h3>Decisiones por tipo</h3>
-            <ul id="final-decision-types" class="summary-list"></ul>
-          </article>
-
-          <article class="summary-card">
-            <h3>Hojas afectadas</h3>
-            <ul id="final-sheets" class="summary-list"></ul>
-          </article>
-
-          <article class="summary-card summary-card-wide">
-            <h3>Pendientes restantes</h3>
-            <ul id="final-pending-list" class="summary-list"></ul>
-          </article>
-        </div>
-
-        <div class="export-box">
-          <label class="toolbar-label" for="export-file-name">Nombre del archivo final</label>
-          <div class="export-controls">
-            <input id="export-file-name" class="export-input" type="text" placeholder="resultado_merge.xlsx" />
-            <button id="export-button" class="action-button primary">Exportar .xlsx</button>
-          </div>
-          <p id="export-message" class="export-message" aria-live="polite"></p>
-        </div>
-      </section>
     </div>
 
     <script type="module" src="./app.js"></script>
