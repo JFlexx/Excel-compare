@@ -69,6 +69,7 @@ Quedan fuera del MVP, por ahora, la colaboración multiusuario en tiempo real, l
 ## Documentación relacionada
 
 - [Propuesta técnica de arquitectura](docs/propuesta-arquitectura-diseno.md)
+- [Propuesta de integración MVP para foco de conflictos en el add-in](docs/excel-addin-conflict-focus-mvp.md)
 - [Modelo de datos de merge session](docs/merge-model.md)
 - [Especificación UX del MVP](docs/ux-mvp-especificacion-mvp.md)
 - [Requisitos no funcionales para entorno empresarial](docs/requisitos-no-funcionales-entorno-empresarial.md)
