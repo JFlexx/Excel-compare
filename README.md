@@ -16,24 +16,24 @@ npm install
 npm test
 ```
 
-### 2. Validar el add-in del MVP
+### 2. Levantar el add-in usable
 
 ```bash
 cd apps/excel-addin
 npm test
+npm start
 ```
 
-### 3. Recorrido oficial del MVP
+Luego abre `http://localhost:3000/index.html`.
 
-1. seleccionar workbook base y comparado;
-2. normalizar ambos archivos;
-3. crear merge session;
-4. persistir checkpoint;
-5. resolver conflictos;
-6. validar estado final;
-7. exportar workbook resultante.
+### 3. Flujos soportados ahora mismo
 
-Este es el único flujo funcional soportado de punta a punta en el piloto. La misma secuencia queda representada en la sesión creada por `compareSelectedWorkbookFiles`, en los checkpoints persistidos, en la revisión final y en el artefacto que genera el motor de merge.
+1. comparar dos workbooks `.xlsx/.xlsm` reales desde el task pane local;
+2. importar una merge session `.json` ya existente;
+3. recuperar una sesión desde `Office.settings` o `sessionUrl` cuando el panel se ejecuta dentro de Excel;
+4. resolver conflictos uno por uno con aceptar izquierda, aceptar derecha o edición manual básica;
+5. revisar pendientes, conflictos críticos y hojas afectadas;
+6. exportar el workbook final en `.xlsx` cuando la sesión queda consistente y sin pendientes.
 
 ## Alcance del MVP
 

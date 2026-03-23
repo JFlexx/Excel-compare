@@ -52,6 +52,25 @@ function assertSessionConsistency(session, conflictId) {
   return conflict;
 }
 
+
+function getPrimaryCellRef(conflict) {
+  return conflict?.cellRef ?? conflict?.cellRefs?.[0] ?? conflict?.id ?? null;
+}
+
+function inferExpectedType(conflict) {
+  const candidates = [conflict?.sourceA?.type, conflict?.sourceB?.type].filter(Boolean);
+  return candidates[0] ?? 'string';
+}
+
+function buildSummary(conflicts = []) {
+  const pending = conflicts.filter((conflict) => conflict.finalState === 'unresolved' || conflict.userDecision === 'unresolved').length;
+  return {
+    total: conflicts.length,
+    pending,
+    resolved: conflicts.length - pending,
+  };
+}
+
 function buildBlockMetadata(conflict) {
   const cellRefs = conflict.cellRefs ?? (conflict.cellRef ? [conflict.cellRef] : []);
   return {

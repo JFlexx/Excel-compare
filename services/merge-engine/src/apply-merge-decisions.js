@@ -245,6 +245,10 @@ function collectWorksheetDiffs(diff) {
 }
 
 function findDecisionForConflict(conflict, coverage) {
+  if (!conflict) {
+    return null;
+  }
+
   return (
     coverage.byTarget.get(conflict.id) ||
     (conflict.cellRefs || []).map((cellRef) => coverage.byCell.get(cellRef)).find(Boolean) ||
