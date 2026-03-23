@@ -198,6 +198,52 @@
           "format": "jsonl",
           "path": "/files/support/ms_demo_budget_001.simple-value-change.history.jsonl",
           "generatedFrom": "mergeDecisions[*].history"
+          "path": "/files/budget.merged.value-change.xlsx",
+          "suggestedFileName": "budget.base__merge__2026-03-23_10-45.xlsx",
+          "resolvedConflictCount": 1,
+          "unresolvedConflictCount": 0,
+          "exportSummary": {
+            "affectedSheets": [
+              "Summary"
+            ],
+            "resolvedConflictCount": 1,
+            "acceptedFromA": 0,
+            "acceptedFromB": 1,
+            "manualEditCount": 0,
+            "autoResolvedCount": 0,
+            "decisionsByType": [
+              {
+                "decisionType": "take_b",
+                "count": 1
+              }
+            ],
+            "visibleSummaryLines": [
+              "Cambios aceptados de archivo base: 0",
+              "Cambios aceptados de archivo comparado: 1",
+              "Ediciones manuales: 0",
+              "Conflictos resueltos: 1"
+            ],
+            "auditExport": {
+              "sessionId": "ms_demo_budget_001",
+              "affectedSheets": [
+                "Summary"
+              ],
+              "resolvedConflictCount": 1,
+              "decisionsByType": [
+                {
+                  "decisionType": "take_b",
+                  "count": 1
+                }
+              ]
+            }
+          }
+        },
+        "exportValidation": {
+          "readyToExport": true,
+          "pendingConflictCount": 0,
+          "manualEditsWithoutValueCount": 0,
+          "structuralErrors": [],
+          "validatedAt": "2026-03-23T10:45:00Z"
         }
       }
     },
@@ -270,6 +316,10 @@
         "nodeType": "MergeDecision",
         "targetType": "conflict",
         "targetId": "conflict:cell:summary:0:C10",
+        "id": "decision:cell:summary:0:C10:manual_edit",
+        "nodeType": "MergeDecision",
+        "targetType": "cell",
+        "targetId": "cell:summary:0:C10",
         "location": {
           "worksheetName": "Summary",
           "sheetIndex": 0,
@@ -330,6 +380,46 @@
             "lastFinalValue": "=SUM(C4:C8)+C9"
           }
         ]
+        "decidedAt": "2026-03-23T10:40:00Z",
+        "manualEdit": {
+          "rawValue": "=SUM(C4:C8)+10",
+          "value": "=SUM(C4:C8)+10",
+          "displayValue": "=SUM(C4:C8)+10",
+          "type": "formula"
+        },
+        "preview": {
+          "targetId": "cell:summary:0:C10",
+          "location": {
+            "worksheetName": "Summary",
+            "sheetIndex": 0,
+            "row": 10,
+            "column": 3,
+            "a1": "C10",
+            "rangeA1": "C10"
+          },
+          "value": "=SUM(C4:C8)+10",
+          "displayValue": "=SUM(C4:C8)+10",
+          "type": "formula"
+        }
+      },
+      "resultPreview": {
+        "cells": {
+          "cell:summary:0:C10": {
+            "value": "=SUM(C4:C8)+10",
+            "displayValue": "=SUM(C4:C8)+10",
+            "type": "formula",
+            "origin": "manual_edit",
+            "location": {
+              "worksheetName": "Summary",
+              "sheetIndex": 0,
+              "row": 10,
+              "column": 3,
+              "a1": "C10",
+              "rangeA1": "C10"
+            }
+          }
+        },
+        "updatedAt": "2026-03-23T10:40:00Z"
       }
     },
     {
@@ -581,6 +671,124 @@
         "path": "/files/support/ms_demo_budget_001.range-conflict.history.jsonl",
         "generatedFrom": "mergeDecision.history"
       }
+    },
+    {
+      "name": "export_ready_summary",
+      "description": "Ejemplo del flujo final de exportación con validación previa, nombre sugerido y resumen visible/auditable.",
+      "exportValidation": {
+        "readyToExport": true,
+        "pendingConflictCount": 0,
+        "manualEditsWithoutValueCount": 0,
+        "structuralErrors": [],
+        "validatedAt": "2026-03-23T11:00:00Z"
+      },
+      "mergeResult": {
+        "id": "merge-result:ms_demo_budget_001:final",
+        "nodeType": "MergeResult",
+        "workbookDiffId": "wbd:wb_a_budget_v1:wb_b_budget_v2",
+        "location": {
+          "worksheetName": null,
+          "sheetIndex": null,
+          "row": null,
+          "column": null,
+          "a1": null,
+          "rangeA1": null
+        },
+        "changeType": "modified",
+        "sourceA": {
+          "workbookId": "wb_a_budget_v1",
+          "exists": true
+        },
+        "sourceB": {
+          "workbookId": "wb_b_budget_v2",
+          "exists": true
+        },
+        "userDecision": "take_both",
+        "finalState": "merged",
+        "appliedDecisionIds": [
+          "decision:cell:summary:0:B4",
+          "decision:conflict:range:summary:0:D5:F6",
+          "decision:cell:summary:0:C10"
+        ],
+        "exportValidation": {
+          "readyToExport": true,
+          "pendingConflictCount": 0,
+          "manualEditsWithoutValueCount": 0,
+          "structuralErrors": [],
+          "validatedAt": "2026-03-23T11:00:00Z"
+        },
+        "output": {
+          "workbookId": "wb_merged_budget_02",
+          "path": "/files/budget.merged.final.xlsx",
+          "suggestedFileName": "budget.base__merge__2026-03-23_11-00.xlsx",
+          "resolvedConflictCount": 3,
+          "unresolvedConflictCount": 0,
+          "exportSummary": {
+            "affectedSheets": [
+              "Summary",
+              "Forecast",
+              "Input"
+            ],
+            "resolvedConflictCount": 3,
+            "acceptedFromA": 2,
+            "acceptedFromB": 5,
+            "manualEditCount": 1,
+            "autoResolvedCount": 4,
+            "decisionsByType": [
+              {
+                "decisionType": "take_a",
+                "count": 2
+              },
+              {
+                "decisionType": "take_b",
+                "count": 5
+              },
+              {
+                "decisionType": "manual_edit",
+                "count": 1
+              },
+              {
+                "decisionType": "auto_resolved",
+                "count": 4
+              }
+            ],
+            "visibleSummaryLines": [
+              "Cambios aceptados de archivo base: 2",
+              "Cambios aceptados de archivo comparado: 5",
+              "Ediciones manuales: 1",
+              "Conflictos resueltos: 3",
+              "Hojas afectadas: Summary, Forecast, Input"
+            ],
+            "auditExport": {
+              "sessionId": "ms_demo_budget_001",
+              "affectedSheets": [
+                "Summary",
+                "Forecast",
+                "Input"
+              ],
+              "resolvedConflictCount": 3,
+              "decisionsByType": [
+                {
+                  "decisionType": "take_a",
+                  "count": 2
+                },
+                {
+                  "decisionType": "take_b",
+                  "count": 5
+                },
+                {
+                  "decisionType": "manual_edit",
+                  "count": 1
+                },
+                {
+                  "decisionType": "auto_resolved",
+                  "count": 4
+                }
+              ]
+            }
+          }
+        }
+      }
     }
   ],
   "technicalSummary": {
@@ -603,5 +811,23 @@
     "format": "jsonl",
     "path": "/files/support/ms_demo_budget_001.history.jsonl",
     "generatedFrom": "examples[*].mergeDecision.history"
+  "resultPreview": {
+    "cells": {
+      "cell:summary:0:C10": {
+        "value": "=SUM(C4:C8)+10",
+        "displayValue": "=SUM(C4:C8)+10",
+        "type": "formula",
+        "origin": "manual_edit",
+        "location": {
+          "worksheetName": "Summary",
+          "sheetIndex": 0,
+          "row": 10,
+          "column": 3,
+          "a1": "C10",
+          "rangeA1": "C10"
+        }
+      }
+    },
+    "updatedAt": "2026-03-23T10:40:00Z"
   }
 }

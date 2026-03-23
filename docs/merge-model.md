@@ -113,6 +113,8 @@ Todos los nodos pueden exponer estos campos, aunque en algunos casos se rellenen
 
 - `userDecision`: `take_a`, `take_b`, `take_both`, `manual_edit`, `skip`, `unresolved`.
 - `finalState`: `pending`, `accepted_a`, `accepted_b`, `merged`, `discarded`, `unresolved`.
+- `manualEdit`: objeto opcional con `rawValue`, `value`, `displayValue` y `type` cuando la decisión final sea `manual_edit`.
+- `resultPreview`: instantánea serializable del valor final por celda para que UI y motor compartan la misma vista previa del resultado.
 
 ### Historial mínimo enlazado a la decisión
 
@@ -499,9 +501,52 @@ Representa el estado materializado tras aplicar todas las decisiones.
 | `userDecision` | string | Decisión agregada final. |
 | `finalState` | string | `merged`, `unresolved`, etc. |
 | `appliedDecisionIds` | array | Decisiones aplicadas. |
+| `exportValidation` | object | Resultado de la validación final antes de generar el workbook. |
 | `output` | object | Ruta del workbook resultante y resumen. |
 | `technicalSummary` | object | Vista derivada para soporte interno a partir de `MergeDecision.history`. |
 | `supportExport` | object | Artefacto exportable sencillo generado desde `MergeDecision.history`. |
+
+### Validación final y salida exportable
+
+Antes de crear el archivo `.xlsx`, el sistema debe materializar una validación final explícita. Esta validación bloquea la exportación si:
+
+- existen conflictos con `finalState = unresolved` o `pending`,
+- hay decisiones manuales sin valor/fórmula final persistida,
+- la sesión referencia hojas u operaciones que ya no son compatibles con el workbook activo.
+
+Se recomienda modelar esta fase con dos estructuras:
+
+```json
+{
+  "exportValidation": {
+    "readyToExport": true,
+    "pendingConflictCount": 0,
+    "manualEditsWithoutValueCount": 0,
+    "structuralErrors": [],
+    "validatedAt": "2026-03-23T10:45:00Z"
+  },
+  "output": {
+    "suggestedFileName": "budget.base__merge__2026-03-23_10-45.xlsx",
+    "exportSummary": {}
+  }
+}
+```
+
+`output.exportSummary` debe servir tanto para la UI como para auditoría interna.
+
+### Estructura recomendada para `exportSummary`
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `affectedSheets` | array | Nombres de hojas incluidas o modificadas en el resultado. |
+| `resolvedConflictCount` | number | Conflictos resueltos en la sesión. |
+| `acceptedFromA` | number | Decisiones finales que tomaron el lado A/base. |
+| `acceptedFromB` | number | Decisiones finales que tomaron el lado B/comparado. |
+| `manualEditCount` | number | Conflictos o celdas resueltos con edición manual. |
+| `autoResolvedCount` | number | Cambios resueltos automáticamente por regla. |
+| `decisionsByType` | array | Conteo por tipo de decisión. |
+| `visibleSummaryLines` | array | Líneas listas para mostrar o copiar en pantalla. |
+| `auditExport` | object | Payload resumido para persistencia o descarga posterior. |
 
 ### Ejemplo mínimo
 
@@ -533,9 +578,17 @@ Representa el estado materializado tras aplicar todas las decisiones.
     "decision:cell:summary:0:B4",
     "decision:conflict:range:summary:0:B4:B6"
   ],
+  "exportValidation": {
+    "readyToExport": true,
+    "pendingConflictCount": 0,
+    "manualEditsWithoutValueCount": 0,
+    "structuralErrors": [],
+    "validatedAt": "2026-03-23T10:45:00Z"
+  },
   "output": {
     "workbookId": "wb_merged_budget-fp-1aa1",
     "path": "/files/budget.merged.xlsx",
+    "suggestedFileName": "budget.base__merge__2026-03-23_10-45.xlsx",
     "resolvedConflictCount": 2,
     "unresolvedConflictCount": 0
   },
@@ -549,6 +602,68 @@ Representa el estado materializado tras aplicar todas las decisiones.
     "format": "jsonl",
     "path": "/files/support/ms_2026-03-23T10-30-00Z_budget-v1.history.jsonl",
     "generatedFrom": "mergeDecisions[*].history"
+    "unresolvedConflictCount": 0,
+    "exportSummary": {
+      "affectedSheets": [
+        "Summary",
+        "Forecast"
+      ],
+      "resolvedConflictCount": 2,
+      "acceptedFromA": 1,
+      "acceptedFromB": 4,
+      "manualEditCount": 1,
+      "autoResolvedCount": 2,
+      "decisionsByType": [
+        {
+          "decisionType": "take_a",
+          "count": 1
+        },
+        {
+          "decisionType": "take_b",
+          "count": 4
+        },
+        {
+          "decisionType": "manual_edit",
+          "count": 1
+        },
+        {
+          "decisionType": "auto_resolved",
+          "count": 2
+        }
+      ],
+      "visibleSummaryLines": [
+        "Cambios aceptados de archivo base: 1",
+        "Cambios aceptados de archivo comparado: 4",
+        "Ediciones manuales: 1",
+        "Conflictos resueltos: 2"
+      ],
+      "auditExport": {
+        "sessionId": "ms_2026-03-23T10-30-00Z_budget-v1",
+        "affectedSheets": [
+          "Summary",
+          "Forecast"
+        ],
+        "resolvedConflictCount": 2,
+        "decisionsByType": [
+          {
+            "decisionType": "take_a",
+            "count": 1
+          },
+          {
+            "decisionType": "take_b",
+            "count": 4
+          },
+          {
+            "decisionType": "manual_edit",
+            "count": 1
+          },
+          {
+            "decisionType": "auto_resolved",
+            "count": 2
+          }
+        ]
+      }
+    }
   }
 }
 ```
