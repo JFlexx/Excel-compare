@@ -50,4 +50,6 @@ test('saving manual edit updates session preview state with manual_edit origin',
   assert.equal(updated.resultPreview.cells['cell:sheet1:B4'].origin, 'manual_edit');
   assert.equal(updated.resultPreview.cells['cell:sheet1:B4'].displayValue, '1550');
   assert.equal(updated.mergeDecisions[0].manualEdit.type, 'number');
+  assert.equal(updated.mergeDecisions[0].history[0].conflictId, 'conflict:sheet1:B4');
+  assert.equal(updated.supportExport.rows[0].affectedLocation, 'Summary!B4');
 });

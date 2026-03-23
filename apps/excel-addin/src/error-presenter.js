@@ -1,6 +1,6 @@
-const { normalizeEngineError } = require('../../../services/merge-engine/src/error-catalog');
+import { normalizeEngineError } from '../../../services/merge-engine/src/error-catalog.js';
 
-const VIEW_STATE_BY_STATUS = Object.freeze({
+export const VIEW_STATE_BY_STATUS = Object.freeze({
   blocked: {
     tone: 'critical',
     canRetry: true,
@@ -15,7 +15,7 @@ const VIEW_STATE_BY_STATUS = Object.freeze({
   },
 });
 
-function createUserErrorView(input) {
+export function createUserErrorView(input) {
   const engineError = normalizeEngineError(input);
   const state = VIEW_STATE_BY_STATUS[engineError.status] || VIEW_STATE_BY_STATUS.blocked;
 
@@ -39,7 +39,7 @@ function createUserErrorView(input) {
   };
 }
 
-function resolveActionLabel(code) {
+export function resolveActionLabel(code) {
   switch (code) {
     case 'CRITICAL_CONFLICTS_PENDING_EXPORT':
       return 'Revisar conflictos críticos';
@@ -50,7 +50,7 @@ function resolveActionLabel(code) {
   }
 }
 
-function buildExportGuard(summary = {}) {
+export function buildExportGuard(summary = {}) {
   if (summary.criticalConflictsPending > 0) {
     return createUserErrorView({
       code: 'CRITICAL_CONFLICTS_PENDING_EXPORT',
@@ -76,7 +76,7 @@ function buildExportGuard(summary = {}) {
   };
 }
 
-function recordAddinError(logger, viewModel) {
+export function recordAddinError(logger, viewModel) {
   const payload = {
     event: 'excel_addin_user_error_presented',
     tone: viewModel.tone,
@@ -92,11 +92,3 @@ function recordAddinError(logger, viewModel) {
   console.error(payload);
   return payload;
 }
-
-module.exports = {
-  VIEW_STATE_BY_STATUS,
-  buildExportGuard,
-  createUserErrorView,
-  recordAddinError,
-  resolveActionLabel,
-};
