@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * @typedef {Object} WorkbookCell
  * @property {*} [value]
@@ -450,7 +448,7 @@ function apply_merge_decisions(leftWorkbookInput, rightWorkbookInput, diff, deci
   };
 }
 
-module.exports = {
+export {
   apply_merge_decisions,
   buildXlsxPayload,
 };

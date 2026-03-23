@@ -1,4 +1,4 @@
-const { normalizeEngineError } = require('../../../services/merge-engine/src/error-catalog');
+import { normalizeEngineError } from '../../../services/merge-engine/src/error-catalog.js';
 
 const VIEW_STATE_BY_STATUS = Object.freeze({
   blocked: {
@@ -45,6 +45,10 @@ function resolveActionLabel(code) {
       return 'Revisar conflictos críticos';
     case 'WORKBOOK_TOO_LARGE':
       return 'Ver límites del MVP';
+    case 'UNSUPPORTED_PILOT_FEATURES':
+      return 'Ver alcance del piloto';
+    case 'AMBIGUOUS_STRUCTURAL_CHANGE':
+      return 'Revisar estructura';
     default:
       return 'Ver cómo resolverlo';
   }
@@ -93,7 +97,7 @@ function recordAddinError(logger, viewModel) {
   return payload;
 }
 
-module.exports = {
+export {
   VIEW_STATE_BY_STATUS,
   buildExportGuard,
   createUserErrorView,

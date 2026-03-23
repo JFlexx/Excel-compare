@@ -29,7 +29,7 @@ export function buildConflictDetailPanelModel(session, conflictId, draftValue = 
     editableField: {
       label: 'Valor final',
       value: draftValue,
-      placeholder: 'Escribe el valor final manual',
+      placeholder: 'Escribe el valor final manual (solo valor o fórmula simple)',
       expectedType: validation.expectedType,
       validationMessage: validation.valid ? null : validation.error,
       isValid: validation.valid

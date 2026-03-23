@@ -1,11 +1,11 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
+import test from 'node:test';
+import assert from 'node:assert/strict';
 
-const {
+import {
   buildExportGuard,
   createUserErrorView,
   recordAddinError,
-} = require('../src/error-presenter');
+} from '../src/error-presenter.js';
 
 test('createUserErrorView turns engine errors into user-facing copy without raw technical text', () => {
   const view = createUserErrorView({
@@ -21,6 +21,21 @@ test('createUserErrorView turns engine errors into user-facing copy without raw 
   assert.match(view.message, /no puede interpretar con seguridad/i);
   assert.ok(!/parser\.ts/i.test(view.message));
   assert.equal(view.telemetry.technicalDetails.diagnostics.parser, 'excel-formula-v2');
+});
+
+test('createUserErrorView exposes pilot-scope copy for unsupported features', () => {
+  const view = createUserErrorView({
+    code: 'UNSUPPORTED_PILOT_FEATURES',
+    context: {
+      operation: 'validate-pilot-scope',
+      diagnostics: { hasMacros: true, hasPivotTables: true },
+    },
+  });
+
+  assert.equal(view.title, 'Este archivo queda fuera del piloto');
+  assert.match(view.message, /macros/i);
+  assert.equal(view.actionLabel, 'Ver alcance del piloto');
+  assert.equal(view.canContinue, false);
 });
 
 test('buildExportGuard blocks export while critical conflicts remain', () => {

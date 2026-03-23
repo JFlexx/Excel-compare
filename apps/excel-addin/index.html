@@ -11,9 +11,9 @@
       <header class="app-header">
         <div>
           <p class="eyebrow">Excel Compare · Uso interno</p>
-          <h1>Resolución de conflictos</h1>
+          <h1>Resolución de conflictos del piloto</h1>
           <p class="intro">
-            Revisa los libros comparados, selecciona un conflicto y decide qué valor conservar.
+            Revisa los libros comparados, selecciona un conflicto soportado por el piloto y decide qué valor conservar.
           </p>
         </div>
         <div class="status-summary" aria-label="Resumen de la comparación">
@@ -27,6 +27,23 @@
           </div>
         </div>
       </header>
+
+      <section class="pilot-banner" aria-label="Alcance del piloto">
+        <div>
+          <p class="banner-eyebrow">Alcance del piloto</p>
+          <h2>Solo resolvemos cambios de valor, fórmulas simples y hojas agregadas o eliminadas de forma sencilla.</h2>
+          <p>
+            Si detectamos macros, tablas dinámicas complejas, objetos embebidos, formatos avanzados o casos estructurales ambiguos,
+            bloqueamos el flujo con un mensaje claro en lugar de intentar un merge inseguro.
+          </p>
+        </div>
+        <ul class="scope-list">
+          <li><strong>Soportado:</strong> valor</li>
+          <li><strong>Soportado:</strong> fórmula simple</li>
+          <li><strong>Soportado:</strong> hoja agregada/eliminada</li>
+          <li><strong>Manual básico:</strong> solo valor o fórmula simple</li>
+        </ul>
+      </section>
 
       <main class="layout-grid">
         <section class="panel panel-files" aria-labelledby="files-title">
@@ -43,8 +60,22 @@
               <span id="active-sheet">—</span>
             </p>
             <p>
-              <strong>Celda activa:</strong>
+              <strong>Celda o hoja activa:</strong>
               <span id="active-cell">—</span>
+            </p>
+          </div>
+
+          <div class="system-message system-message-warning">
+            <h3>Qué queda fuera del piloto</h3>
+            <p>
+              Detectamos macros, tablas dinámicas complejas, objetos embebidos o formatos avanzados. Este caso no está soportado en el piloto.
+            </p>
+          </div>
+
+          <div class="system-message system-message-neutral">
+            <h3>Mensaje de estructura ambigua</h3>
+            <p>
+              La estructura del libro es ambigua para este piloto. Revisa hojas renombradas, celdas combinadas o movimientos complejos antes de volver a intentar.
             </p>
           </div>
         </section>
@@ -61,7 +92,15 @@
               <option value="all">Todos</option>
               <option value="pending">Pendientes</option>
               <option value="resolved">Resueltos</option>
+              <option value="manual">Editados manualmente</option>
             </select>
+          </div>
+
+          <div class="supported-types" aria-label="Tipos soportados">
+            <span class="chip chip-neutral">Valor distinto</span>
+            <span class="chip chip-neutral">Fórmula simple distinta</span>
+            <span class="chip chip-neutral">Hoja agregada</span>
+            <span class="chip chip-neutral">Hoja eliminada</span>
           </div>
 
           <ul class="conflict-list" id="conflict-list" aria-live="polite"></ul>
@@ -84,7 +123,7 @@
                 <strong id="detail-sheet">—</strong>
               </div>
               <div>
-                <span class="meta-label">Celda</span>
+                <span class="meta-label">Celda o hoja</span>
                 <strong id="detail-cell">—</strong>
               </div>
               <div>
@@ -111,6 +150,25 @@
                 <pre id="right-value" class="value-box">—</pre>
                 <button id="accept-right" class="action-button primary">Aceptar derecha</button>
               </article>
+            </div>
+
+            <div class="manual-edit-card">
+              <div class="manual-edit-header">
+                <div>
+                  <h3>Edición manual básica</h3>
+                  <p>Disponible solo para valores y fórmulas simples de una sola celda.</p>
+                </div>
+                <span class="chip chip-neutral" id="manual-edit-scope">Dentro del alcance</span>
+              </div>
+              <label class="toolbar-label" for="manual-edit-input">Valor final</label>
+              <textarea id="manual-edit-input" class="manual-edit-input" rows="3" placeholder="Escribe el valor final o una fórmula simple"></textarea>
+              <p id="manual-edit-help" class="manual-edit-help">
+                La edición manual básica solo está disponible para valores y fórmulas simples.
+              </p>
+              <div class="manual-edit-actions">
+                <button id="save-manual" class="action-button primary">Guardar cambio</button>
+                <button id="clear-manual" class="action-button tertiary">Cancelar</button>
+              </div>
             </div>
 
             <div class="resolution-summary">
