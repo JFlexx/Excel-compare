@@ -545,28 +545,67 @@ Si el producto aún no soporta persistencia real, el MVP puede mostrar guardado 
 **Regla recomendada**
 - Permitir exportar solo cuando no haya conflictos pendientes.
 - Si negocio exige exportación parcial, entonces mostrar advertencia explícita.
+- Antes de habilitar la exportación, recalcular el estado de la sesión para confirmar que no existan conflictos en `Pending`, validaciones fallidas ni ediciones manuales incompletas.
 
 **Estado sin permisos de exportación por pendientes**
 - Botón deshabilitado o interceptado con mensaje:
 - `Debes resolver todos los conflictos antes de exportar.`
 
+**Validaciones previas obligatorias**
+- Verificar `Conflictos pendientes: 0`.
+- Verificar que todas las ediciones manuales tengan valor o fórmula final guardada.
+- Verificar que el libro resultado pueda generarse con las hojas seleccionadas sin errores estructurales.
+- Si alguna validación falla, mostrar un resumen bloqueante con:
+  - cantidad de conflictos pendientes,
+  - hojas afectadas,
+  - acción sugerida para continuar.
+
+**Mensajes exactos de validación**
+- `Aún tienes conflictos pendientes. Resuélvelos antes de exportar.`
+- `Hay ediciones manuales sin guardar en el resultado final.`
+- `No pudimos preparar el archivo final porque hay errores estructurales en la sesión.`
+
 ### Modal o paso de exportación
 Campos mínimos:
 - Nombre del archivo final.
+- Nombre sugerido del archivo final.
 - Hoja(s) incluidas si aplica.
+- Resumen visible de decisiones aplicadas.
 - Confirmación de reemplazo si el nombre ya existe.
 
 **Textos exactos**
 - Título: `Exportar resultado final`
 - Campo: `Nombre del archivo`
+- Etiqueta auxiliar: `Nombre sugerido`
+- Bloque de resumen: `Resumen de esta exportación`
 - Botones: `Exportar` / `Cancelar`
+
+**Nombre sugerido del archivo**
+- Formato recomendado: `{archivo-base-sin-extension}__merge__{fecha-hora-local}.xlsx`.
+- Si existe una sesión nombrada, permitir usar `{nombre-sesion}__resultado.xlsx`.
+- El usuario puede editar el nombre sugerido antes de confirmar.
+
+**Resumen visible obligatorio**
+- `Cambios aceptados de archivo base: N`
+- `Cambios aceptados de archivo comparado: N`
+- `Ediciones manuales: N`
+- `Conflictos resueltos: N`
+- `Hojas afectadas: Hoja1, Hoja2, ...`
+- `Decisiones por tipo: aceptar izquierda, aceptar derecha, edición manual, auto-resuelto`
+
+**Comportamiento del resumen**
+- Debe mostrarse dentro del modal antes de exportar.
+- Debe poder copiarse o reutilizarse como base de auditoría interna.
+- Debe mantenerse visible también en la pantalla de éxito de exportación.
 
 **Estado en progreso**
 - `Generando archivo final...`
+- `Preparando resumen de exportación...`
 
 **Éxito**
 - `Resultado exportado correctamente.`
 - CTA adicional: `Abrir carpeta`
+- CTA adicional: `Copiar resumen`
 
 **Errores exactos**
 - `Debes indicar un nombre para el archivo final.`
@@ -581,10 +620,17 @@ Campos mínimos:
 |                                                          |
 | Nombre del archivo                                       |
 | [resultado_final.xlsx                           ]        |
+| Sugerido: budget.base__merge__2026-03-23_10-45.xlsx      |
 |                                                          |
 | Conflictos pendientes: 0                                 |
+| Cambios aceptados de archivo base: 12                    |
+| Cambios aceptados de archivo comparado: 18               |
+| Ediciones manuales: 3                                    |
+| Conflictos resueltos: 9                                  |
+| Hojas afectadas: Summary, Forecast, Input                |
+| Decisiones por tipo: izq 12 / der 18 / manual 3 / auto 6 |
 |                                                          |
-|                                    [Cancelar] [Exportar] |
+|                     [Cancelar] [Copiar resumen] [Exportar] |
 +----------------------------------------------------------+
 ```
 
@@ -706,4 +752,3 @@ Campos mínimos:
 - `Resultado exportado correctamente.`
 - `No hay conflictos para los filtros seleccionados.`
 - `No quedan conflictos pendientes en esta hoja.`
-
