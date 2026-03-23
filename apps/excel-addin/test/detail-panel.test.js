@@ -83,4 +83,6 @@ test('reduceSessionState rejects malformed actions instead of leaving a silent c
   );
   assert.equal(session.mergeDecisions.length, 0);
   assert.deepEqual(session.resultPreview.cells, {});
+  assert.equal(updated.mergeDecisions[0].history[0].conflictId, 'conflict:sheet1:B4');
+  assert.equal(updated.supportExport.rows[0].affectedLocation, 'Summary!B4');
 });

@@ -22,6 +22,7 @@ const OPERATIONAL_LIMITS = Object.freeze({
 });
 
 const ERROR_DEFINITIONS = Object.freeze({
+export const ERROR_DEFINITIONS = Object.freeze({
   CORRUPT_FILE: {
     code: 'CORRUPT_FILE',
     userTitle: 'No pudimos abrir el archivo',
@@ -101,7 +102,7 @@ const ERROR_DEFINITIONS = Object.freeze({
   },
 });
 
-function sanitizeForUser(value) {
+export function sanitizeForUser(value) {
   if (!value) return undefined;
   return String(value)
     .replace(/(?:[A-Z]:)?[^\s]+\.(?:js|ts|json|xml|zip|xlsx|xlsm)/gi, '[archivo interno]')
@@ -130,7 +131,7 @@ function pickSupportContext(context = {}) {
   };
 }
 
-function buildError(code, context = {}, cause) {
+export function buildError(code, context = {}, cause) {
   const definition = ERROR_DEFINITIONS[code];
   if (!definition) {
     throw new Error(`Unsupported merge engine error code: ${code}`);
@@ -165,6 +166,8 @@ function buildError(code, context = {}, cause) {
 
 function inferErrorCode(input = {}) {
   const probe = [input.rawCode, input.message, input.cause?.message, input.context?.invalidReason]
+export function inferErrorCode(input = {}) {
+  const probe = [input.rawCode, input.message, input.cause?.message]
     .filter(Boolean)
     .join(' ')
     .toLowerCase();
@@ -194,13 +197,13 @@ function inferErrorCode(input = {}) {
   return input.fallbackCode || 'CORRUPT_FILE';
 }
 
-function normalizeEngineError(input = {}) {
+export function normalizeEngineError(input = {}) {
   const cause = input.cause instanceof Error ? input.cause : undefined;
   const code = input.code || inferErrorCode(input);
   return buildError(code, input.context, cause);
 }
 
-function logEngineError(logger, engineError) {
+export function logEngineError(logger, engineError) {
   const payload = {
     event: 'merge_engine_error',
     code: engineError.code,

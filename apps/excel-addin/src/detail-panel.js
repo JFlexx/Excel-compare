@@ -1,4 +1,7 @@
-import { createManualEditDecision, validateManualEdit } from '../../../services/merge-engine/src/index.js';
+import { createManualEditDecision, validateManualEdit } from '../../../services/merge-engine/src/manual-decisions.js';
+import { syncDerivedHistoryArtifacts, upsertMergeDecision } from './history-panel.js';
+import { createManualEditDecision, validateManualEdit } from './manual-edit.js';
+import { createManualEditDecision, validateManualEdit } from './merge-engine-client.js';
 
 function findConflict(session, conflictId) {
   return (session.conflicts ?? []).find(
@@ -95,6 +98,7 @@ export function saveManualEditFromPanel(session, { conflictId, rawValue, decided
     rawValue,
     decidedBy,
     decidedAt,
+    sessionId: session.sessionId
   });
 
   return {
@@ -128,10 +132,11 @@ export function reduceSessionState(session, action) {
     throw error;
   }
 
-  return {
+  const nextSession = {
     ...session,
     status: 'attention_required',
     mergeDecisions: [...(session.mergeDecisions ?? []), decision],
+    mergeDecisions: upsertMergeDecision(session.mergeDecisions ?? [], decision),
     conflicts: (session.conflicts ?? []).map((conflict) => {
       if (!(conflict.id === targetId || conflict.cellRef === targetId || conflict.cellRefs?.includes(targetId))) {
         return conflict;
@@ -164,4 +169,6 @@ export function reduceSessionState(session, action) {
       updatedAt: decision.decidedAt,
     },
   };
+
+  return syncDerivedHistoryArtifacts(nextSession);
 }
