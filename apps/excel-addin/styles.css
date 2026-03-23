@@ -39,8 +39,20 @@ button {
   cursor: pointer;
 }
 
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 8px;
+  font-size: 2rem;
+}
+
 .app-shell {
-  max-width: 1400px;
+  max-width: 1540px;
   margin: 0 auto;
   padding: 24px;
 }
@@ -60,18 +72,6 @@ button {
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-}
-
-h1,
-h2,
-h3,
-p {
-  margin-top: 0;
-}
-
-h1 {
-  margin-bottom: 8px;
-  font-size: 2rem;
 }
 
 .intro,
@@ -99,7 +99,8 @@ h1 {
 .value-card,
 .manual-edit-card,
 .resolution-summary,
-.export-box {
+.export-box,
+.card-surface {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 16px;
@@ -125,7 +126,7 @@ h1 {
 
 .layout-grid {
   display: grid;
-  grid-template-columns: minmax(280px, 0.9fr) minmax(320px, 1fr) minmax(420px, 1.15fr);
+  grid-template-columns: minmax(300px, 0.95fr) minmax(320px, 1fr) minmax(420px, 1.15fr) minmax(300px, 0.95fr);
   gap: 20px;
   align-items: start;
 }
@@ -134,12 +135,17 @@ h1 {
   padding: 20px;
 }
 
+.stack-panel {
+  display: grid;
+  gap: 16px;
+}
+
 .panel-heading {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   gap: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 0;
 }
 
 .panel-heading.compact {
@@ -153,6 +159,15 @@ h1 {
 .conflict-list {
   display: grid;
   gap: 12px;
+}
+
+.card-surface {
+  padding: 16px;
+}
+
+.inline-actions {
+  grid-template-columns: 1fr auto;
+  align-items: center;
 }
 
 .field-label {
@@ -217,7 +232,10 @@ h1 {
 .conflict-toolbar {
   display: grid;
   gap: 8px;
-  margin-bottom: 16px;
+}
+
+.toolbar-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .conflict-list {
@@ -226,7 +244,12 @@ h1 {
   margin: 0;
 }
 
-.empty-list {
+.compact-list .conflict-item {
+  padding: 12px;
+}
+
+.empty-list,
+.empty-state {
   padding: 12px;
   border: 1px dashed var(--border);
   border-radius: 12px;
@@ -276,7 +299,8 @@ h1 {
 
 .detail-meta,
 .resolution-grid,
-.value-columns {
+.value-columns,
+.review-grid {
   display: grid;
   gap: 12px;
 }
@@ -289,7 +313,8 @@ h1 {
   background: #f9fbfe;
 }
 
-.value-columns {
+.value-columns,
+.review-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
@@ -298,6 +323,10 @@ h1 {
 .resolution-summary,
 .export-box {
   padding: 16px;
+}
+
+.compact-card {
+  min-height: 0;
 }
 
 .value-box {
@@ -410,7 +439,13 @@ h1 {
   color: var(--danger);
 }
 
-@media (max-width: 1180px) {
+@media (max-width: 1380px) {
+  .layout-grid {
+    grid-template-columns: repeat(2, minmax(320px, 1fr));
+  }
+}
+
+@media (max-width: 1024px) {
   .layout-grid {
     grid-template-columns: 1fr;
   }
@@ -421,7 +456,8 @@ h1 {
   .panel-heading,
   .conflict-item-header,
   .value-card-header,
-  .manual-edit-header {
+  .manual-edit-header,
+  .inline-actions {
     flex-direction: column;
     align-items: flex-start;
   }
@@ -429,9 +465,12 @@ h1 {
   .status-summary,
   .detail-meta,
   .value-columns,
+  .review-grid,
   .file-meta-grid,
   .resolution-grid,
-  .manual-edit-actions {
+  .manual-edit-actions,
+  .toolbar-grid,
+  .inline-actions {
     grid-template-columns: 1fr;
     min-width: 0;
   }

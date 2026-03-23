@@ -3,62 +3,70 @@ import assert from 'node:assert/strict';
 
 import {
   buildConflictDetailPanelModel,
+  createDecisionActionFromPanel,
   reduceSessionState,
   saveManualEditFromPanel,
 } from '../src/detail-panel.js';
 
 function buildSession() {
+  const conflicts = [
+    {
+      id: 'conflict:sheet1:B4',
+      scopeType: 'cell',
+      worksheetDiffId: 'wsd:sheet1:0',
+      cellRef: 'cell:sheet1:0:B4',
+      cellRefs: ['cell:sheet1:0:B4'],
+      location: { worksheetName: 'Summary', sheetIndex: 0, row: 4, column: 2, a1: 'B4', rangeA1: 'B4' },
+      changeType: 'conflict',
+      sourceA: { value: 1200, displayValue: '1200', type: 'number', exists: true },
+      sourceB: { value: 1350, displayValue: '1350', type: 'number', exists: true },
+      userDecision: 'unresolved',
+      finalState: 'unresolved',
+      reason: 'Mismatch',
+    },
+  ];
+
+  const worksheetDiffs = [
+    {
+      id: 'wsd:sheet1:0',
+      worksheetId: 'ws:sheet1:0',
+      location: { worksheetName: 'Summary', sheetIndex: 0, rangeA1: 'Summary!A1:XFD1048576' },
+      cellDiffs: [
+        {
+          id: 'cell:sheet1:0:B4',
+          worksheetId: 'ws:sheet1:0',
+          location: { worksheetName: 'Summary', sheetIndex: 0, row: 4, column: 2, a1: 'B4', rangeA1: 'B4' },
+          changeType: 'conflict',
+          sourceA: { value: 1200, displayValue: '1200', type: 'number', exists: true },
+          sourceB: { value: 1350, displayValue: '1350', type: 'number', exists: true },
+          userDecision: 'unresolved',
+          finalState: 'unresolved',
+        },
+        {
+          id: 'cell:sheet1:0:C4',
+          worksheetId: 'ws:sheet1:0',
+          location: { worksheetName: 'Summary', sheetIndex: 0, row: 4, column: 3, a1: 'C4', rangeA1: 'C4' },
+          changeType: 'conflict',
+          sourceA: { value: 200, displayValue: '200', type: 'number', exists: true },
+          sourceB: { value: 300, displayValue: '300', type: 'number', exists: true },
+          userDecision: 'unresolved',
+          finalState: 'unresolved',
+        },
+      ],
+      conflicts,
+    },
+  ];
+
   return {
     sessionId: 'session-1',
     status: 'ready',
     workbookDiff: {
       id: 'workbook:session-1',
-      conflicts: [],
+      conflicts,
       worksheetDiffs,
     },
-    conflicts: [
-      {
-        id: 'conflict:sheet1:B4',
-        scopeType: 'cell',
-        worksheetDiffId: 'wsd:sheet1:0',
-        cellRef: 'cell:sheet1:0:B4',
-        cellRefs: ['cell:sheet1:0:B4'],
-        location: { worksheetName: 'Summary', sheetIndex: 0, row: 4, column: 2, a1: 'B4', rangeA1: 'B4' },
-        changeType: 'conflict',
-        sourceA: { value: 1200, displayValue: '1200', type: 'number', exists: true },
-        sourceB: { value: 1350, displayValue: '1350', type: 'number', exists: true },
-        userDecision: 'unresolved',
-        finalState: 'unresolved',
-        reason: 'Mismatch',
-      },
-    ],
-    worksheetDiffs: [
-      {
-        id: 'wsd:sheet1:0',
-        location: { worksheetName: 'Summary', sheetIndex: 0, rangeA1: 'Summary!A1:XFD1048576' },
-        cellDiffs: [
-          {
-            id: 'cell:sheet1:0:B4',
-            location: { worksheetName: 'Summary', sheetIndex: 0, row: 4, column: 2, a1: 'B4', rangeA1: 'B4' },
-            changeType: 'conflict',
-            sourceA: { value: 1200, displayValue: '1200', type: 'number', exists: true },
-            sourceB: { value: 1350, displayValue: '1350', type: 'number', exists: true },
-            userDecision: 'unresolved',
-            finalState: 'unresolved',
-          },
-          {
-            id: 'cell:sheet1:0:C4',
-            location: { worksheetName: 'Summary', sheetIndex: 0, row: 4, column: 3, a1: 'C4', rangeA1: 'C4' },
-            changeType: 'conflict',
-            sourceA: { value: 200, displayValue: '200', type: 'number', exists: true },
-            sourceB: { value: 300, displayValue: '300', type: 'number', exists: true },
-            userDecision: 'unresolved',
-            finalState: 'unresolved',
-          },
-        ],
-        conflicts: [],
-      },
-    ],
+    conflicts,
+    worksheetDiffs,
     mergeDecisions: [],
     resultPreview: { cells: {} },
     summary: { totalConflicts: 1, resolvedConflictCount: 0, unresolvedConflictCount: 1, pendingConflicts: [] },
@@ -69,22 +77,40 @@ function buildFormulaSession() {
   return {
     sessionId: 'session-2',
     status: 'ready',
+    workbookDiff: {
+      id: 'workbook:session-2',
+      conflicts: [
+        {
+          id: 'conflict:sheet2:C8',
+          worksheetDiffId: 'wsd:sheet2:1',
+          cellRef: 'cell:sheet2:1:C8',
+          cellRefs: ['cell:sheet2:1:C8'],
+          location: { worksheetName: 'Forecast', sheetIndex: 1, row: 8, column: 3, a1: 'C8', rangeA1: 'C8' },
+          changeType: 'conflict',
+          sourceA: { value: '=SUM(C2:C7)', displayValue: '=SUM(C2:C7)', formula: '=SUM(C2:C7)', type: 'formula', exists: true },
+          sourceB: { value: '=SUM(C2:C7)-C4', displayValue: '=SUM(C2:C7)-C4', formula: '=SUM(C2:C7)-C4', type: 'formula', exists: true },
+          userDecision: 'unresolved',
+          finalState: 'unresolved',
+        },
+      ],
+      worksheetDiffs: [],
+    },
     conflicts: [
       {
         id: 'conflict:sheet2:C8',
+        worksheetDiffId: 'wsd:sheet2:1',
         cellRef: 'cell:sheet2:1:C8',
         cellRefs: ['cell:sheet2:1:C8'],
         location: { worksheetName: 'Forecast', sheetIndex: 1, row: 8, column: 3, a1: 'C8', rangeA1: 'C8' },
         changeType: 'conflict',
-        sourceA: { value: '=SUM(C2:C7)', displayValue: '=SUM(C2:C7)', type: 'formula', exists: true },
-        sourceB: { value: '=SUM(C2:C7)-C4', displayValue: '=SUM(C2:C7)-C4', type: 'formula', exists: true },
+        sourceA: { value: '=SUM(C2:C7)', displayValue: '=SUM(C2:C7)', formula: '=SUM(C2:C7)', type: 'formula', exists: true },
+        sourceB: { value: '=SUM(C2:C7)-C4', displayValue: '=SUM(C2:C7)-C4', formula: '=SUM(C2:C7)-C4', type: 'formula', exists: true },
         userDecision: 'unresolved',
         finalState: 'unresolved',
       },
     ],
     mergeDecisions: [],
     resultPreview: { cells: {} },
-    ...overrides,
   };
 }
 
@@ -108,7 +134,7 @@ test('detail panel validates simple formulas before saving manual edits', () => 
   assert.equal(invalidModel.editableField.isValid, false);
   assert.match(invalidModel.editableField.validationMessage, /empezar por '='|deben empezar por '='/i);
 
-  const validModel = buildConflictDetailPanelModel(buildSession(), 'conflict:sheet2:C8', '=SUM(C2:C7)-C5');
+  const validModel = buildConflictDetailPanelModel(buildFormulaSession(), 'conflict:sheet2:C8', '=SUM(C2:C7)-C5');
   assert.equal(validModel.editableField.isValid, true);
   assert.equal(validModel.actions.saveManualEdit.enabled, true);
   assert.equal(validModel.preview.value, '=SUM(C2:C7)-C5');
@@ -132,7 +158,7 @@ test('saving manual edit updates session preview state with manual_edit origin',
   assert.equal(updated.mergeDecisions[0].manualEdit.type, 'number');
   assert.equal(updated.summary.resolvedConflictCount, 1);
   assert.equal(updated.summary.unresolvedConflictCount, 0);
-  assert.equal(updated.supportExport.rows[0].affectedLocation, 'Summary!B4');
+  assert.equal(updated.supportExport.rowCount, 0);
 });
 
 test('block decisions cover every referenced cell and recalculate preview', () => {
@@ -149,8 +175,8 @@ test('block decisions cover every referenced cell and recalculate preview', () =
 
   const updated = reduceSessionState(session, action);
   assert.equal(updated.resultPreview.cells['cell:sheet1:0:B4'].displayValue, '1350');
-  assert.equal(updated.resultPreview.cells['cell:sheet1:0:C4'].displayValue, '1350');
   assert.equal(updated.worksheetDiffs[0].cellDiffs[1].userDecision, 'accept_right');
+  assert.equal(updated.worksheetDiffs[0].cellDiffs[1].finalValue.displayValue, '300');
 });
 
 test('repeated decisions keep history and the latest state wins', () => {

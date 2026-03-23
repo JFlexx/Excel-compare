@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {
   buildExportGuard,
   createUserErrorView,
+  recordAddinError,
 } from '../src/error-presenter.js';
 
 test('createUserErrorView turns unsupported formulas into requires-attention copy without raw technical text', () => {
@@ -113,7 +114,7 @@ test('recordAddinError emits minimal telemetry payload for support', () => {
   const payload = recordAddinError(logger, view);
   assert.equal(events.length, 1);
   assert.equal(payload.event, 'excel_addin_user_error_presented');
-  assert.equal(payload.telemetry.code, 'WORKBOOK_TOO_LARGE');
-  assert.equal(payload.telemetry.supportContext.metrics.sheetCount, 32);
-  assert.ok(payload.telemetry.supportReference);
+  assert.equal(payload.code, 'WORKBOOK_TOO_LARGE');
+  assert.equal(payload.supportContext.metrics.sheetCount, 32);
+  assert.ok(payload.supportReference);
 });

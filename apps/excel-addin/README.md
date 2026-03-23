@@ -1,6 +1,13 @@
 # Excel Add-in local
 
-Implementación del task pane del MVP para ejecutar un único flujo oficial: seleccionar dos workbooks, normalizarlos, crear la merge session, persistir checkpoints, resolver conflictos, validar el estado final y exportar el resultado.
+Implementación del task pane del MVP para ejecutar un flujo usable desde navegador o Excel:
+
+1. comparar dos workbooks reales;
+2. crear la merge session inicial;
+3. persistirla localmente y, cuando existe, también en `Office.settings`;
+4. resolver conflictos con decisiones izquierda/derecha o edición manual básica;
+5. revisar pendientes antes de exportar;
+6. exportar el workbook final en `.xlsx`.
 
 ## Cómo empezar hoy
 
@@ -11,23 +18,39 @@ npm test
 
 cd ../../apps/excel-addin
 npm test
+npm start
 ```
 
-Con esto validas la orquestación principal del add-in, la persistencia de checkpoints, la revisión final y la construcción del workbook exportable.
+Abre `http://localhost:3000/index.html` para usar el task pane local.
 
-## Flujo oficial soportado por el add-in
+## Flujos soportados por el add-in
 
-1. seleccionar workbook base y comparado;
-2. normalizar ambos libros;
-3. crear la merge session inicial;
-4. guardar el checkpoint inicial y los siguientes checkpoints de resolución;
-5. resolver conflictos individuales, por bloque o con edición manual básica;
-6. validar consistencia y pendientes antes de exportar;
-7. generar el workbook final descargable.
+### Comparar workbooks reales
+
+- selecciona un workbook base y uno comparado en la UI;
+- el servidor local genera la `merge session` usando el motor compartido;
+- la lista de conflictos se actualiza con filtros por estado y hoja.
+
+### Cargar una merge session existente
+
+- importa un archivo JSON de sesión;
+- o carga una sesión remota por URL;
+- o recupérala desde Excel si está guardada en `Office.settings`.
+
+### Resolver conflictos
+
+- aceptar izquierda;
+- aceptar derecha;
+- guardar edición manual para valores y fórmulas simples;
+- revisar el resumen final de pendientes y conflictos críticos.
+
+### Exportar workbook final
+
+- cuando ya no quedan pendientes, el botón de exportación descarga el `.xlsx` final.
 
 ## Qué queda fuera del piloto
 
-El add-in debe comunicar explícitamente estos límites cuando aparezcan en validación o en errores:
+El add-in comunica explícitamente estos límites cuando aparezcan en validación o en errores:
 
 - macros y VBA;
 - tablas dinámicas complejas;
@@ -39,7 +62,8 @@ El add-in debe comunicar explícitamente estos límites cuando aparezcan en vali
 
 ## Artefactos principales
 
-- `src/compare-session.js`: crea la sesión oficial del MVP a partir de dos workbooks normalizados.
-- `src/session-persistence.js`: persiste la sesión, reanuda checkpoints y registra decisiones.
-- `src/final-review.js`: valida consistencia, resume la revisión y genera el workbook final.
-- `src/detail-panel.js`: expone las acciones de aceptar izquierda/derecha y edición manual básica.
+- `app.js`: shell usable del task pane con comparación real, importación de sesión, revisión final y exportación.
+- `server.mjs`: servidor local estático más endpoints `/api/compare` y `/api/export`.
+- `src/server-session.js`: adapta uploads/workbooks al motor y genera el `.xlsx` final.
+- `src/session-model.js`: normaliza sesiones para la UI y para sincronización con Excel.
+- `src/session-operations.js`: aplica decisiones del task pane y actualiza la vista previa local.

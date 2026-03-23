@@ -48,14 +48,24 @@ export function normalizeSessionPayload(rawPayload, workbookInfo = null) {
   }
 
   const normalized = {
+    ...session,
     sessionId: session.sessionId ?? workbookDiff.id ?? 'session-without-id',
     createdAt: session.createdAt ?? null,
+    updatedAt: session.updatedAt ?? session.createdAt ?? null,
     sourceA: session.sourceA ?? workbookDiff.sourceA ?? null,
     sourceB: session.sourceB ?? workbookDiff.sourceB ?? null,
+    sourceAWorkbook: session.sourceAWorkbook ?? null,
+    sourceBWorkbook: session.sourceBWorkbook ?? null,
     workbookDiff,
     workbookInfo,
     conflicts,
     mergeDecisions: [...(session.mergeDecisions ?? [])],
+    checkpoints: [...(session.checkpoints ?? [])],
+    officialFlow: session.officialFlow ?? null,
+    summary: session.summary ?? null,
+    status: session.status ?? null,
+    mvpLimits: session.mvpLimits ?? null,
+    exportFileName: session.exportFileName ?? null,
     resultPreview: {
       ...(session.resultPreview ?? {}),
       cells: { ...(session.resultPreview?.cells ?? {}) },
