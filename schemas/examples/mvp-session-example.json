@@ -1,0 +1,64 @@
+{
+  "sessionId": "ms_2026-03-23T10-30-00-000Z_budget_base_xlsx__budget_review_xlsx",
+  "officialFlow": {
+    "currentStep": "export_result_workbook",
+    "steps": [
+      { "step": "select_workbooks", "label": "Seleccionar workbook base y comparado", "status": "completed" },
+      { "step": "normalize_workbooks", "label": "Normalizar ambos workbooks", "status": "completed" },
+      { "step": "create_merge_session", "label": "Crear merge session", "status": "completed" },
+      { "step": "persist_checkpoint", "label": "Persistir checkpoint", "status": "completed" },
+      { "step": "resolve_conflicts", "label": "Resolver conflictos", "status": "completed" },
+      { "step": "validate_final_state", "label": "Validar estado final", "status": "completed" },
+      { "step": "export_result_workbook", "label": "Exportar workbook resultante", "status": "current" }
+    ]
+  },
+  "inputFiles": {
+    "base": "budget.base.xlsx",
+    "compared": "budget.review.xlsx"
+  },
+  "detectedConflict": {
+    "id": "conflict:cell:summary:0:C3",
+    "worksheet": "Summary",
+    "cell": "C3",
+    "reason": "Both cells define different formulas and require manual validation.",
+    "sourceA": {
+      "displayValue": "300",
+      "formula": "=SUM(B3:B3)",
+      "type": "formula"
+    },
+    "sourceB": {
+      "displayValue": "200",
+      "formula": "=SUM(B3:B3)-100",
+      "type": "formula"
+    }
+  },
+  "recordedDecision": {
+    "id": "decision:conflict:cell:summary:0:C3:2026-03-23T10:42:00.000Z",
+    "targetId": "conflict:cell:summary:0:C3",
+    "userDecision": "take_a",
+    "finalState": "accepted_a",
+    "decidedBy": "user:ana",
+    "decidedAt": "2026-03-23T10:42:00.000Z"
+  },
+  "exportArtifact": {
+    "type": "xlsx-workbook",
+    "workbookId": "wb_base_budget_base_xlsx__merged__wb_compared_budget_review_xlsx",
+    "worksheets": [
+      {
+        "name": "Summary",
+        "cells": {
+          "B2": "1500",
+          "C2": "=SUM(B2:B2)",
+          "B3": "300",
+          "C3": "=SUM(B3:B3)"
+        }
+      },
+      {
+        "name": "Notes",
+        "cells": {
+          "A1": "Nueva hoja"
+        }
+      }
+    ]
+  }
+}

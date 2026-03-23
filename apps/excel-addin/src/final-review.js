@@ -1,4 +1,4 @@
-import { apply_merge_decisions, buildXlsxPayload } from '../../../services/merge-engine/src/apply-merge-decisions.js';
+import { OFFICIAL_MVP_FLOW_LABELS, apply_merge_decisions, buildXlsxPayload } from '../../../services/merge-engine/src/index.js';
 import { buildExportGuard, createUserErrorView } from './error-presenter.js';
 
 const RESOLVED_DECISIONS = new Set(['take_a', 'take_b', 'take_left', 'take_right', 'manual_edit']);
@@ -202,8 +202,14 @@ export function buildFinalReviewModel(session = {}) {
   const summary = summarizeReview(session);
   const suggestedFileName = session.exportFileName || createSuggestedFileName(session);
 
+  const validationFlow = (session.officialFlow?.steps ?? []).map((step) => ({
+    ...step,
+    label: step.label ?? OFFICIAL_MVP_FLOW_LABELS[step.step] ?? step.step,
+  }));
+
   return {
     consistency,
+    validationFlow,
     suggestedFileName,
     resolvedConflictCount: summary.resolvedConflicts.length,
     pendingCount: summary.totalPending,
@@ -317,11 +323,19 @@ export function generateFinalWorkbookArtifacts(session, dependencies = {}) {
     xlsxPayload,
     binary,
     fileName: session.exportFileName || createSuggestedFileName(session),
+    exportArtifact: mergeOutcome.exportArtifact ?? {
+      type: 'xlsx-payload',
+      workbookId: mergeOutcome.workbook.workbookId,
+      worksheetCount: xlsxPayload.worksheets.length,
+      worksheets: xlsxPayload.worksheets.map((worksheet) => worksheet.name),
+    },
     exportSummary: {
       affectedSheets: review.affectedSheets,
       resolvedConflictCount: review.resolvedConflicts.length,
       decisionsByType: review.decisionsByType,
       pendingConflicts: review.pendingConflicts,
+      finalValidationStep: 'validate_final_state',
+      finalExportStep: 'export_result_workbook',
     },
   };
 }
