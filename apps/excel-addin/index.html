@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Comparador de libros Excel</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="app-header">
+        <div>
+          <p class="eyebrow">Excel Compare · Uso interno</p>
+          <h1>Resolución de conflictos</h1>
+          <p class="intro">
+            Revisa los libros comparados, selecciona un conflicto y decide qué valor conservar.
+          </p>
+        </div>
+        <div class="status-summary" aria-label="Resumen de la comparación">
+          <div>
+            <span class="summary-label">Pendientes</span>
+            <strong id="pending-count">0</strong>
+          </div>
+          <div>
+            <span class="summary-label">Resueltos</span>
+            <strong id="resolved-count">0</strong>
+          </div>
+        </div>
+      </header>
+
+      <main class="layout-grid">
+        <section class="panel panel-files" aria-labelledby="files-title">
+          <div class="panel-heading">
+            <h2 id="files-title">Libros comparados</h2>
+            <span class="chip chip-neutral">2 archivos</span>
+          </div>
+
+          <div class="file-card-group" id="file-summary"></div>
+
+          <div class="compare-note">
+            <p>
+              <strong>Hoja activa:</strong>
+              <span id="active-sheet">—</span>
+            </p>
+            <p>
+              <strong>Celda activa:</strong>
+              <span id="active-cell">—</span>
+            </p>
+          </div>
+        </section>
+
+        <section class="panel panel-conflicts" aria-labelledby="conflicts-title">
+          <div class="panel-heading">
+            <h2 id="conflicts-title">Conflictos detectados</h2>
+            <span class="chip chip-alert" id="conflict-counter">0 pendientes</span>
+          </div>
+
+          <div class="conflict-toolbar">
+            <label class="toolbar-label" for="status-filter">Filtrar</label>
+            <select id="status-filter" class="toolbar-select">
+              <option value="all">Todos</option>
+              <option value="pending">Pendientes</option>
+              <option value="resolved">Resueltos</option>
+            </select>
+          </div>
+
+          <ul class="conflict-list" id="conflict-list" aria-live="polite"></ul>
+        </section>
+
+        <section class="panel panel-detail" aria-labelledby="detail-title">
+          <div class="panel-heading">
+            <h2 id="detail-title">Detalle del conflicto</h2>
+            <span class="chip" id="detail-status-chip">Sin selección</span>
+          </div>
+
+          <div id="detail-empty" class="empty-state">
+            Selecciona un conflicto para ver la hoja, la celda afectada y los valores de ambos lados.
+          </div>
+
+          <div id="detail-content" class="detail-content" hidden>
+            <div class="detail-meta">
+              <div>
+                <span class="meta-label">Hoja</span>
+                <strong id="detail-sheet">—</strong>
+              </div>
+              <div>
+                <span class="meta-label">Celda</span>
+                <strong id="detail-cell">—</strong>
+              </div>
+              <div>
+                <span class="meta-label">Tipo</span>
+                <strong id="detail-type">—</strong>
+              </div>
+            </div>
+
+            <div class="value-columns">
+              <article class="value-card">
+                <div class="value-card-header">
+                  <h3>Valor izquierdo</h3>
+                  <span class="value-caption" id="left-book-name">—</span>
+                </div>
+                <pre id="left-value" class="value-box">—</pre>
+                <button id="accept-left" class="action-button secondary">Aceptar izquierda</button>
+              </article>
+
+              <article class="value-card">
+                <div class="value-card-header">
+                  <h3>Valor derecho</h3>
+                  <span class="value-caption" id="right-book-name">—</span>
+                </div>
+                <pre id="right-value" class="value-box">—</pre>
+                <button id="accept-right" class="action-button primary">Aceptar derecha</button>
+              </article>
+            </div>
+
+            <div class="resolution-summary">
+              <h3>Estado del conflicto</h3>
+              <p id="resolution-message">Pendiente de resolución.</p>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
