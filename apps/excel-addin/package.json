@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "start": "node ./server.mjs",
+    "serve": "node ./server.mjs",
+    "validate:manifest": "npx office-addin-manifest validate manifest.xml",
     "test": "node --test"
   }
 }
