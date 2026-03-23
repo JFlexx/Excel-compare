@@ -30,6 +30,8 @@ const DECISION_TO_STATE = {
   take_b: 'accepted_b',
   take_left: 'accepted_a',
   take_right: 'accepted_b',
+  accept_left: 'accepted_a',
+  accept_right: 'accepted_b',
   manual_edit: 'merged',
   skip: 'pending',
   unresolved: 'unresolved',
@@ -37,6 +39,19 @@ const DECISION_TO_STATE = {
 
 function deepClone(value) {
   return value == null ? value : JSON.parse(JSON.stringify(value));
+}
+
+function normalizeDecisionType(decision) {
+  const rawType = decision?.decisionType ?? decision?.userDecision ?? 'unresolved';
+  const aliases = {
+    take_a: 'accept_left',
+    take_left: 'accept_left',
+    accepted_a: 'accept_left',
+    take_b: 'accept_right',
+    take_right: 'accept_right',
+    accepted_b: 'accept_right',
+  };
+  return aliases[rawType] ?? rawType;
 }
 
 function normalizeCell(cell) {
@@ -182,12 +197,36 @@ function toCellFromSnapshot(snapshot) {
   return normalizeCell(snapshot);
 }
 
-function makeDecisionIndex(decisions) {
-  const byTarget = new Map();
-  for (const decision of decisions || []) {
-    byTarget.set(decision.targetId, decision);
+function collectDecisionCoverage(decisions = []) {
+  const coverage = {
+    byTarget: new Map(),
+    byCell: new Map(),
+    byWorksheet: new Map(),
+  };
+
+  for (const decision of decisions) {
+    const normalizedDecision = {
+      ...decision,
+      decisionType: normalizeDecisionType(decision),
+      userDecision: normalizeDecisionType(decision),
+      cellRefs: [...new Set((decision?.cellRefs || []).filter(Boolean))],
+      worksheetDiffIds: [...new Set((decision?.worksheetDiffIds || []).filter(Boolean))],
+    };
+
+    if (normalizedDecision.targetId) {
+      coverage.byTarget.set(normalizedDecision.targetId, normalizedDecision);
+    }
+
+    for (const cellRef of normalizedDecision.cellRefs) {
+      coverage.byCell.set(cellRef, normalizedDecision);
+    }
+
+    for (const worksheetDiffId of normalizedDecision.worksheetDiffIds) {
+      coverage.byWorksheet.set(worksheetDiffId, normalizedDecision);
+    }
   }
-  return byTarget;
+
+  return coverage;
 }
 
 function collectConflicts(diff) {
@@ -205,41 +244,38 @@ function collectWorksheetDiffs(diff) {
   return diff?.worksheetDiffs || [];
 }
 
-function buildConflictCoverage(conflicts, decisionsByTarget) {
-  const coverage = new Map();
-  for (const conflict of conflicts) {
-    const decision = decisionsByTarget.get(conflict.id);
-    for (const cellRef of conflict.cellRefs || []) {
-      if (decision) {
-        coverage.set(cellRef, decision);
-      }
-    }
-  }
-  return coverage;
+function findDecisionForConflict(conflict, coverage) {
+  return (
+    coverage.byTarget.get(conflict.id) ||
+    (conflict.cellRefs || []).map((cellRef) => coverage.byCell.get(cellRef)).find(Boolean) ||
+    null
+  );
 }
 
 function isDecisionResolved(decision) {
-  return Boolean(decision) && !['skip', 'unresolved'].includes(decision.userDecision);
+  return Boolean(decision) && !['skip', 'unresolved'].includes(normalizeDecisionType(decision));
 }
 
 function decisionToState(decision) {
   if (decision?.finalState) {
     return decision.finalState;
   }
-  return DECISION_TO_STATE[decision?.userDecision] || 'pending';
+  return DECISION_TO_STATE[normalizeDecisionType(decision)] || 'pending';
 }
 
 function resolveTargetSnapshot(decision, leftValue, rightValue) {
-  switch (decision?.userDecision) {
+  switch (normalizeDecisionType(decision)) {
     case 'take_a':
     case 'take_left':
+    case 'accept_left':
       return { snapshot: leftValue, origin: 'left' };
     case 'take_b':
     case 'take_right':
+    case 'accept_right':
       return { snapshot: rightValue, origin: 'right' };
     case 'manual_edit':
       return {
-        snapshot: decision.manualValue || decision.manualCell || decision.manualWorksheet || decision.manualSnapshot,
+        snapshot: decision.manualValue || decision.manualCell || decision.manualWorksheet || decision.manualSnapshot || decision.manualEdit,
         origin: 'manual',
       };
     default:
@@ -283,13 +319,13 @@ function applyWorksheetDecision(resultWorkbook, leftWorkbook, rightWorkbook, wor
   const { snapshot, origin } = resolveTargetSnapshot(decision, leftSheet, rightSheet);
 
   if (!snapshot || snapshot.cells == null) {
-    if (decision?.userDecision === 'take_a' || decision?.userDecision === 'take_left') {
+    if (['take_a', 'take_left', 'accept_left'].includes(normalizeDecisionType(decision))) {
       if (leftSheet) {
         ensureWorksheet(resultWorkbook, worksheetDiff.location, leftSheet);
       } else {
         removeWorksheet(resultWorkbook, worksheetDiff.location, rightSheet);
       }
-    } else if (decision?.userDecision === 'take_b' || decision?.userDecision === 'take_right') {
+    } else if (['take_b', 'take_right', 'accept_right'].includes(normalizeDecisionType(decision))) {
       if (rightSheet) {
         ensureWorksheet(resultWorkbook, worksheetDiff.location, rightSheet);
       } else {
@@ -310,10 +346,10 @@ function applyWorksheetDecision(resultWorkbook, leftWorkbook, rightWorkbook, wor
   });
 }
 
-function summarizePending(conflicts, decisionsByTarget) {
+function summarizePending(conflicts, coverage) {
   const pending = [];
   for (const conflict of conflicts) {
-    const decision = decisionsByTarget.get(conflict.id);
+    const decision = findDecisionForConflict(conflict, coverage);
     if (!isDecisionResolved(decision)) {
       pending.push({
         targetType: 'conflict',
@@ -354,17 +390,16 @@ function apply_merge_decisions(leftWorkbookInput, rightWorkbookInput, diff, deci
   const leftWorkbook = normalizeWorkbook(leftWorkbookInput);
   const rightWorkbook = normalizeWorkbook(rightWorkbookInput);
   const resultWorkbook = normalizeWorkbook(leftWorkbook);
-  const decisionsByTarget = makeDecisionIndex(decisions);
+  const coverage = collectDecisionCoverage(decisions);
   const conflicts = collectConflicts(diff);
   const cellDiffs = collectCellDiffs(diff);
   const worksheetDiffs = collectWorksheetDiffs(diff);
-  const conflictCoverage = buildConflictCoverage(conflicts, decisionsByTarget);
   const appliedChanges = [];
   const appliedDecisionIds = [];
   const resolvedConflicts = [];
 
   for (const worksheetDiff of worksheetDiffs) {
-    const decision = decisionsByTarget.get(worksheetDiff.id);
+    const decision = coverage.byTarget.get(worksheetDiff.id) || coverage.byWorksheet.get(worksheetDiff.id);
     if (isDecisionResolved(decision)) {
       applyWorksheetDecision(resultWorkbook, leftWorkbook, rightWorkbook, worksheetDiff, decision, appliedChanges);
       appliedDecisionIds.push(decision.id);
@@ -372,7 +407,7 @@ function apply_merge_decisions(leftWorkbookInput, rightWorkbookInput, diff, deci
   }
 
   for (const cellDiff of cellDiffs) {
-    const decision = decisionsByTarget.get(cellDiff.id) || conflictCoverage.get(cellDiff.id);
+    const decision = coverage.byTarget.get(cellDiff.id) || coverage.byCell.get(cellDiff.id);
     if (isDecisionResolved(decision)) {
       applyCellDecision(resultWorkbook, leftWorkbook, rightWorkbook, cellDiff, decision, appliedChanges);
       if (decision.id && !appliedDecisionIds.includes(decision.id)) {
@@ -382,11 +417,11 @@ function apply_merge_decisions(leftWorkbookInput, rightWorkbookInput, diff, deci
   }
 
   for (const conflict of conflicts) {
-    const decision = decisionsByTarget.get(conflict.id);
+    const decision = findDecisionForConflict(conflict, coverage);
     if (isDecisionResolved(decision)) {
       resolvedConflicts.push({
         conflictId: conflict.id,
-        resolution: decision.userDecision,
+        resolution: normalizeDecisionType(decision),
         finalState: decisionToState(decision),
       });
     }
@@ -394,7 +429,7 @@ function apply_merge_decisions(leftWorkbookInput, rightWorkbookInput, diff, deci
 
   sortWorksheets(resultWorkbook);
 
-  const pendingConflicts = summarizePending(conflicts, decisionsByTarget);
+  const pendingConflicts = summarizePending(conflicts, coverage);
   const summary = {
     totalConflicts: conflicts.length,
     resolvedConflictCount: resolvedConflicts.length,

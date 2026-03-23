@@ -6,7 +6,7 @@
   "description": "Workbook normalization utilities for Excel compare/merge MVP.",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "node --import tsx --test test/xlsx-normalizer.test.ts"
+    "test": "node --import tsx --test test/xlsx-normalizer.test.ts test/merge-decisions.test.mjs"
   },
   "dependencies": {
     "xlsx": "^0.18.5"
