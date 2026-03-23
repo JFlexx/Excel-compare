@@ -14,6 +14,7 @@
           <p class="eyebrow">Excel Compare · Uso interno</p>
           <h1>Sesión inicial de comparación</h1>
           <p class="intro">
+            Revisa los libros comparados, selecciona un conflicto y consulta el historial cronológico enlazado con cada decisión.
             Revisa los libros comparados, guarda checkpoints de la sesión y decide si quieres reanudar o reiniciar el merge.
             Selecciona el workbook base y el workbook comparado para normalizarlos, ejecutar el diff del MVP y guardar la sesión inicial.
           </p>
@@ -137,11 +138,12 @@
 
         <section class="panel panel-detail" aria-labelledby="detail-title">
           <div class="panel-heading">
-            <h2 id="detail-title">Detalle del conflicto</h2>
+            <h2 id="detail-title">Detalle e historial</h2>
             <span class="chip" id="detail-status-chip">Sin selección</span>
           </div>
 
           <div id="detail-empty" class="empty-state">
+            Selecciona un conflicto para ver la hoja, la celda afectada, el historial enlazado y la exportación de soporte.
             Genera una sesión y selecciona un conflicto para revisar la hoja, la celda afectada y los valores de ambos lados.
           </div>
 
@@ -178,6 +180,10 @@
                   <span class="value-caption" id="right-book-name">—</span>
                 </div>
                 <pre id="right-value" class="value-box">—</pre>
+                <div class="action-stack">
+                  <button id="accept-right" class="action-button primary">Aceptar derecha</button>
+                  <button id="auto-resolve" class="action-button tertiary">Aplicar sugerencia automática</button>
+                </div>
                 <button id="accept-right" class="action-button primary" type="button">Aceptar derecha</button>
                 <button id="apply-right-sheet" class="action-button tertiary" type="button">Aplicar derecha en hoja</button>
               </article>
@@ -199,8 +205,50 @@
 
             <div class="resolution-summary">
               <h3>Estado del conflicto</h3>
+              <p id="resolution-message">Pendiente de resolución.</p>
+              <div class="resolution-grid">
+                <div>
+                  <span class="meta-label">Valor final</span>
+                  <strong id="final-value">Pendiente</strong>
+                </div>
+                <div>
+                  <span class="meta-label">Origen del cambio</span>
+                  <strong id="resolution-origin">Sin resolver</strong>
+                </div>
+              </div>
               <p id="resolution-message">Pendiente de revisión.</p>
             </div>
+
+            <section class="history-panel" aria-labelledby="history-title">
+              <div class="panel-heading panel-heading-subsection">
+                <div>
+                  <h3 id="history-title">Historial cronológico</h3>
+                  <span class="summary-label" id="history-count">0 eventos</span>
+                </div>
+                <select id="history-scope" class="toolbar-select toolbar-select-compact">
+                  <option value="all">Todos los conflictos</option>
+                  <option value="selected">Solo conflicto seleccionado</option>
+                </select>
+              </div>
+
+              <ul class="history-timeline" id="history-timeline"></ul>
+            </section>
+
+            <section class="history-panel" aria-labelledby="export-title">
+              <div class="panel-heading panel-heading-subsection">
+                <div>
+                  <h3 id="export-title">supportExport</h3>
+                  <span class="summary-label">Resumen plano para negocio y soporte</span>
+                </div>
+                <select id="export-format" class="toolbar-select toolbar-select-compact">
+                  <option value="jsonl">JSON Lines</option>
+                  <option value="csv">CSV</option>
+                </select>
+              </div>
+
+              <ul class="export-summary" id="export-summary"></ul>
+              <pre class="export-preview" id="export-preview" aria-label="Vista previa exportable"></pre>
+            </section>
           </div>
         </section>
       </main>
