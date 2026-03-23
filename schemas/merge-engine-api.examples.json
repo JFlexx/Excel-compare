@@ -1,0 +1,429 @@
+{
+  "createMergeSession": {
+    "request": {
+      "createdBy": "user:ana",
+      "clientContext": {
+        "clientName": "apps/excel-addin",
+        "clientVersion": "0.1.0",
+        "locale": "es-ES"
+      },
+      "comparisonOptions": {
+        "detectFormulaChanges": true,
+        "detectFormatChanges": false,
+        "includeDefinedNames": true,
+        "conflictStrategy": "manual_first"
+      }
+    },
+    "response": {
+      "mergeSession": {
+        "sessionId": "ms_2026-03-23T10-30-00Z_budget-v1",
+        "createdAt": "2026-03-23T10:30:00Z",
+        "updatedAt": "2026-03-23T10:30:00Z",
+        "status": "awaiting_sources",
+        "sourceA": null,
+        "sourceB": null,
+        "workbookDiff": null,
+        "mergeDecisions": [],
+        "mergeResult": null,
+        "comparisonOptions": {
+          "detectFormulaChanges": true,
+          "detectFormatChanges": false,
+          "includeDefinedNames": true,
+          "conflictStrategy": "manual_first"
+        }
+      }
+    }
+  },
+  "createUpload": {
+    "request": {
+      "fileName": "budget.base.xlsx",
+      "mediaType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "sizeBytes": 48213,
+      "checksumSha256": "5d41402abc4b2a76b9719d911017c592"
+    },
+    "response": {
+      "uploadToken": "upl_01HQ7Z2Q8KJ9V7M3T6N4",
+      "uploadUrl": "https://uploads.internal.example/upl_01HQ7Z2Q8KJ9V7M3T6N4",
+      "expiresAt": "2026-03-23T10:45:00Z"
+    }
+  },
+  "bindSourceA": {
+    "request": {
+      "sourceRole": "sourceA",
+      "ingestMode": "upload",
+      "label": "budget.base.xlsx",
+      "mediaType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "checksumSha256": "5d41402abc4b2a76b9719d911017c592",
+      "uploadToken": "upl_01HQ7Z2Q8KJ9V7M3T6N4",
+      "reference": null,
+      "origin": {
+        "kind": "excel-addin",
+        "workbookId": "wb_a_budget-fp-91f2"
+      }
+    },
+    "response": {
+      "mergeSession": {
+        "sessionId": "ms_2026-03-23T10-30-00Z_budget-v1",
+        "updatedAt": "2026-03-23T10:31:10Z",
+        "status": "awaiting_sources",
+        "sourceA": {
+          "workbookId": "wb_a_budget-fp-91f2",
+          "label": "budget.base.xlsx",
+          "path": "/files/uploads/upl_01HQ7Z2Q8KJ9V7M3T6N4/budget.base.xlsx"
+        },
+        "sourceB": null
+      }
+    }
+  },
+  "bindSourceB": {
+    "request": {
+      "sourceRole": "sourceB",
+      "ingestMode": "reference",
+      "label": "budget.review.xlsx",
+      "mediaType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "checksumSha256": "7d793037a0760186574b0282f2f435e7",
+      "uploadToken": null,
+      "reference": {
+        "workbookId": "wb_b_budget-fp-82af",
+        "artifactId": "artifact:wb_b_budget-fp-82af:v3",
+        "path": "/files/budget.review.xlsx",
+        "version": "v3"
+      },
+      "origin": {
+        "kind": "document-library",
+        "workbookId": "wb_b_budget-fp-82af"
+      }
+    },
+    "response": {
+      "mergeSession": {
+        "sessionId": "ms_2026-03-23T10-30-00Z_budget-v1",
+        "updatedAt": "2026-03-23T10:31:10Z",
+        "status": "ready_for_diff",
+        "sourceA": {
+          "workbookId": "wb_a_budget-fp-91f2",
+          "label": "budget.base.xlsx",
+          "path": "/files/uploads/upl_01HQ7Z2Q8KJ9V7M3T6N4/budget.base.xlsx"
+        },
+        "sourceB": {
+          "workbookId": "wb_b_budget-fp-82af",
+          "label": "budget.review.xlsx",
+          "path": "/files/budget.review.xlsx"
+        }
+      }
+    }
+  },
+  "computeWorkbookDiff": {
+    "request": {
+      "recompute": false,
+      "comparisonOptions": {
+        "detectFormulaChanges": true,
+        "detectFormatChanges": false,
+        "includeDefinedNames": true,
+        "conflictStrategy": "manual_first"
+      }
+    },
+    "accepted": {
+      "sessionId": "ms_2026-03-23T10-30-00Z_budget-v1",
+      "status": "processing_diff",
+      "operation": {
+        "operationId": "op_diff_01HQ80M0A6Y1J",
+        "kind": "compute_workbook_diff",
+        "pollUrl": "/api/merge-sessions/ms_2026-03-23T10-30-00Z_budget-v1/workbook-diff"
+      }
+    },
+    "result": {
+      "sessionId": "ms_2026-03-23T10-30-00Z_budget-v1",
+      "status": "diff_ready",
+      "workbookDiff": {
+        "id": "wbd:wb_a_budget-fp-91f2:wb_b_budget-fp-82af",
+        "nodeType": "WorkbookDiff",
+        "sourceAWorkbookId": "wb_a_budget-fp-91f2",
+        "sourceBWorkbookId": "wb_b_budget-fp-82af",
+        "location": {
+          "worksheetName": null,
+          "sheetIndex": null,
+          "row": null,
+          "column": null,
+          "a1": null,
+          "rangeA1": null
+        },
+        "changeType": "modified",
+        "sourceA": {
+          "label": "budget.base.xlsx",
+          "path": "/files/uploads/upl_01HQ7Z2Q8KJ9V7M3T6N4/budget.base.xlsx",
+          "exists": true
+        },
+        "sourceB": {
+          "label": "budget.review.xlsx",
+          "path": "/files/budget.review.xlsx",
+          "exists": true
+        },
+        "userDecision": "unresolved",
+        "finalState": "pending",
+        "worksheetDiffs": [
+          {
+            "id": "wsd:summary:0",
+            "nodeType": "WorksheetDiff",
+            "worksheetId": "ws:summary:0",
+            "location": {
+              "worksheetName": "Summary",
+              "sheetIndex": 0,
+              "row": null,
+              "column": null,
+              "a1": null,
+              "rangeA1": "Summary!A1:XFD1048576"
+            },
+            "changeType": "modified",
+            "sourceA": {
+              "name": "Summary",
+              "exists": true
+            },
+            "sourceB": {
+              "name": "Summary",
+              "exists": true
+            },
+            "userDecision": "unresolved",
+            "finalState": "pending",
+            "cellDiffs": [
+              {
+                "id": "cell:summary:0:B4",
+                "nodeType": "CellDiff",
+                "worksheetId": "ws:summary:0",
+                "location": {
+                  "worksheetName": "Summary",
+                  "sheetIndex": 0,
+                  "row": 4,
+                  "column": 2,
+                  "a1": "B4",
+                  "rangeA1": "B4"
+                },
+                "changeType": "modified",
+                "sourceA": {
+                  "value": 1200,
+                  "displayValue": "1200",
+                  "formula": null,
+                  "type": "number",
+                  "exists": true
+                },
+                "sourceB": {
+                  "value": 1350,
+                  "displayValue": "1350",
+                  "formula": null,
+                  "type": "number",
+                  "exists": true
+                },
+                "userDecision": "unresolved",
+                "finalState": "pending",
+                "conflictIds": []
+              }
+            ],
+            "conflicts": []
+          }
+        ],
+        "conflicts": [],
+        "summary": {
+          "worksheetCount": 1,
+          "cellDiffCount": 1,
+          "conflictCount": 0,
+          "autoResolvableCount": 1
+        }
+      }
+    }
+  },
+  "saveMergeDecisions": {
+    "request": {
+      "mergeDecisions": [
+        {
+          "id": "decision:cell:summary:0:B4",
+          "nodeType": "MergeDecision",
+          "targetType": "cell",
+          "targetId": "cell:summary:0:B4",
+          "location": {
+            "worksheetName": "Summary",
+            "sheetIndex": 0,
+            "row": 4,
+            "column": 2,
+            "a1": "B4",
+            "rangeA1": "B4"
+          },
+          "changeType": "modified",
+          "sourceA": {
+            "value": 1200,
+            "exists": true
+          },
+          "sourceB": {
+            "value": 1350,
+            "exists": true
+          },
+          "userDecision": "take_b",
+          "finalState": "accepted_b",
+          "decidedBy": "user:ana",
+          "decidedAt": "2026-03-23T10:35:00Z",
+          "note": "Aceptar el importe revisado."
+        }
+      ]
+    },
+    "response": {
+      "sessionId": "ms_2026-03-23T10-30-00Z_budget-v1",
+      "savedDecisionCount": 1,
+      "mergeDecisions": [
+        {
+          "id": "decision:cell:summary:0:B4",
+          "nodeType": "MergeDecision",
+          "targetType": "cell",
+          "targetId": "cell:summary:0:B4",
+          "location": {
+            "worksheetName": "Summary",
+            "sheetIndex": 0,
+            "row": 4,
+            "column": 2,
+            "a1": "B4",
+            "rangeA1": "B4"
+          },
+          "changeType": "modified",
+          "sourceA": {
+            "value": 1200,
+            "exists": true
+          },
+          "sourceB": {
+            "value": 1350,
+            "exists": true
+          },
+          "userDecision": "take_b",
+          "finalState": "accepted_b",
+          "decidedBy": "user:ana",
+          "decidedAt": "2026-03-23T10:35:00Z",
+          "note": "Aceptar el importe revisado."
+        }
+      ],
+      "status": "diff_ready"
+    }
+  },
+  "previewMergeResult": {
+    "request": {
+      "includeWorkbookMetadata": true,
+      "includeCellChanges": true,
+      "validateUnresolvedConflicts": true
+    },
+    "response": {
+      "sessionId": "ms_2026-03-23T10-30-00Z_budget-v1",
+      "status": "preview_ready",
+      "mergeResult": {
+        "id": "merge-result:ms_2026-03-23T10-30-00Z_budget-v1:preview-001",
+        "nodeType": "MergeResult",
+        "workbookDiffId": "wbd:wb_a_budget-fp-91f2:wb_b_budget-fp-82af",
+        "location": {
+          "worksheetName": null,
+          "sheetIndex": null,
+          "row": null,
+          "column": null,
+          "a1": null,
+          "rangeA1": null
+        },
+        "changeType": "modified",
+        "sourceA": {
+          "workbookId": "wb_a_budget-fp-91f2",
+          "exists": true
+        },
+        "sourceB": {
+          "workbookId": "wb_b_budget-fp-82af",
+          "exists": true
+        },
+        "userDecision": "take_b",
+        "finalState": "merged",
+        "appliedDecisionIds": [
+          "decision:cell:summary:0:B4"
+        ],
+        "output": {
+          "workbookId": "wb_preview_budget-fp-1aa1",
+          "path": null,
+          "resolvedConflictCount": 1,
+          "unresolvedConflictCount": 0
+        }
+      },
+      "preview": {
+        "worksheetChanges": [
+          {
+            "worksheetId": "ws:summary:0",
+            "cellChanges": [
+              {
+                "a1": "B4",
+                "finalValue": 1350,
+                "finalFormula": null,
+                "finalState": "accepted_b"
+              }
+            ]
+          }
+        ],
+        "warnings": []
+      }
+    }
+  },
+  "exportMergeResult": {
+    "request": {
+      "exportFormat": "xlsx",
+      "fileName": "budget.merged.xlsx",
+      "delivery": {
+        "mode": "download_url",
+        "expiresInSeconds": 3600
+      }
+    },
+    "accepted": {
+      "sessionId": "ms_2026-03-23T10-30-00Z_budget-v1",
+      "status": "exporting",
+      "operation": {
+        "operationId": "op_export_01HQ80WY5TK4P",
+        "kind": "export_merge_result",
+        "pollUrl": "/api/merge-sessions/ms_2026-03-23T10-30-00Z_budget-v1/merge-result"
+      }
+    },
+    "result": {
+      "sessionId": "ms_2026-03-23T10-30-00Z_budget-v1",
+      "status": "completed",
+      "mergeResult": {
+        "id": "merge-result:ms_2026-03-23T10-30-00Z_budget-v1:001",
+        "nodeType": "MergeResult",
+        "workbookDiffId": "wbd:wb_a_budget-fp-91f2:wb_b_budget-fp-82af",
+        "location": {
+          "worksheetName": null,
+          "sheetIndex": null,
+          "row": null,
+          "column": null,
+          "a1": null,
+          "rangeA1": null
+        },
+        "changeType": "modified",
+        "sourceA": {
+          "workbookId": "wb_a_budget-fp-91f2",
+          "exists": true
+        },
+        "sourceB": {
+          "workbookId": "wb_b_budget-fp-82af",
+          "exists": true
+        },
+        "userDecision": "take_b",
+        "finalState": "merged",
+        "appliedDecisionIds": [
+          "decision:cell:summary:0:B4"
+        ],
+        "output": {
+          "workbookId": "wb_merged_budget-fp-1aa1",
+          "path": "/files/budget.merged.xlsx",
+          "downloadUrl": "https://downloads.internal.example/files/budget.merged.xlsx",
+          "resolvedConflictCount": 1,
+          "unresolvedConflictCount": 0
+        }
+      }
+    }
+  },
+  "error": {
+    "error": {
+      "code": "invalid_merge_decision",
+      "message": "targetId does not belong to the current workbookDiff.",
+      "details": {
+        "sessionId": "ms_2026-03-23T10-30-00Z_budget-v1",
+        "targetId": "cell:summary:0:Z999"
+      }
+    }
+  }
+}

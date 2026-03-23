@@ -4,5 +4,24 @@
   "type": "module",
   "scripts": {
     "test": "node --test"
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Workbook normalization utilities for Excel compare/merge MVP.",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "node --import tsx --test test/xlsx-normalizer.test.ts"
+  },
+  "dependencies": {
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.3",
+    "@types/node": "^22.13.10",
+    "typescript": "^5.8.2"
   }
 }
