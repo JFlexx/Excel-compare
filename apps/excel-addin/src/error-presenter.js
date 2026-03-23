@@ -1,50 +1,87 @@
-import { normalizeEngineError } from '../../../services/merge-engine/src/error-catalog.js';
-import { normalizeEngineError, OPERATIONAL_LIMITS } from '../../../services/merge-engine/src/error-catalog.js';
-import { normalizeEngineError } from '../../../services/merge-engine/src/error-catalog.js';
+const OPERATIONAL_LIMITS = Object.freeze({
+  standard: {
+    maxFileSizeMb: 25,
+    maxSheets: 25,
+    maxUsedCells: 200000,
+    maxConcurrentOperationsPerUser: 1,
+  },
+  platformScope: {
+    primary: 'Excel Desktop para Windows con Microsoft 365 Apps for enterprise.',
+    controlledAlternative: 'Excel 2021 LTSC aprobado por TI.',
+    outOfScope: 'Excel para Mac sigue fuera de alcance inicial salvo validación expresa de TI.',
+  },
+});
+
 const ERROR_DEFINITIONS = Object.freeze({
-  CORRUPT_FILE: {
-    code: 'CORRUPT_FILE',
-    userTitle: 'No pudimos abrir el archivo',
+  UNSUPPORTED_PILOT_FEATURES: {
+    code: 'UNSUPPORTED_PILOT_FEATURES',
+    userTitle: 'Este archivo queda fuera del piloto',
     userMessage:
-      'Parece que el archivo está dañado, incompleto o protegido de una forma que este MVP todavía no puede procesar. Prueba con otra copia del archivo o vuelve a guardarlo antes de intentarlo de nuevo.',
-    userAction: 'Revisa si el archivo se abre correctamente en Excel y vuelve a cargarlo.',
+      'Detectamos macros, tablas dinámicas complejas, objetos embebidos o formatos avanzados. Este caso queda fuera del alcance del piloto.',
+    userAction:
+      'Elimina esas características o usa una versión simplificada del libro antes de volver a compararlo.',
     status: 'blocked',
     severity: 'error',
-    stage: 'ingestion',
+    stage: 'analysis',
   },
   UNINTERPRETABLE_FORMULAS: {
     code: 'UNINTERPRETABLE_FORMULAS',
-    userTitle: 'Hay fórmulas que necesitan revisión',
+    userTitle: 'Hay fórmulas que requieren atención',
     userMessage:
-      'Detectamos fórmulas que este MVP no puede interpretar con seguridad. Necesitamos que las revises o simplifiques antes de continuar.',
-    userAction: 'Verifica las fórmulas señaladas y vuelve a intentar la comparación.',
+      'Detectamos fórmulas no soportadas o ambiguas para este MVP. La sesión sigue disponible, pero necesitas revisarlas antes de continuar.',
+    userAction:
+      'Identifica las fórmulas marcadas, sustitúyelas por valores o fórmulas compatibles y vuelve a ejecutar el análisis.',
     status: 'needs_attention',
     severity: 'error',
     stage: 'analysis',
   },
   WORKBOOK_TOO_LARGE: {
     code: 'WORKBOOK_TOO_LARGE',
-    userTitle: 'El libro es demasiado grande para este MVP',
+    userTitle: 'El libro supera los límites operativos del MVP',
     userMessage:
-      'El archivo supera el tamaño o la complejidad que podemos procesar de forma confiable en esta versión. Divide el libro o reduce el alcance antes de volver a intentarlo.',
-    userAction: 'Reduce la cantidad de hojas o el rango utilizado y vuelve a cargar el archivo.',
+      'El archivo excede el tamaño o la complejidad soportados para uso estándar y podríamos degradar el análisis o bloquear Excel si continuamos.',
+    userAction:
+      'Reduce el alcance a un máximo estándar de 25 MB, 25 hojas y 200.000 celdas relevantes, o divide el libro antes de reintentar.',
     status: 'blocked',
     severity: 'error',
     stage: 'limits',
   },
   CRITICAL_CONFLICTS_PENDING_EXPORT: {
     code: 'CRITICAL_CONFLICTS_PENDING_EXPORT',
-    userTitle: 'Todavía no puedes exportar',
+    userTitle: 'La exportación está bloqueada',
     userMessage:
-      'Aún quedan conflictos críticos por resolver. Revisa los elementos marcados y completa esas decisiones antes de exportar el resultado final.',
-    userAction: 'Abre la lista de conflictos críticos y resuélvelos antes de exportar.',
+      'Todavía quedan conflictos críticos por resolver. Exportar ahora dejaría el resultado final incompleto o inconsistente.',
+    userAction:
+      'Abre la lista de conflictos críticos, resuélvelos y confirma que no quedan pendientes antes de exportar.',
     status: 'blocked',
     severity: 'error',
     stage: 'export',
   },
+  PENDING_CONFLICTS_PENDING_EXPORT: {
+    code: 'PENDING_CONFLICTS_PENDING_EXPORT',
+    userTitle: 'Debes resolver los pendientes antes de exportar',
+    userMessage:
+      'Todavía quedan conflictos o decisiones pendientes. Revísalos antes de generar el archivo final para evitar un resultado incompleto.',
+    userAction:
+      'Vuelve a la revisión final, localiza los pendientes y termina esas decisiones antes de exportar.',
+    status: 'blocked',
+    severity: 'error',
+    stage: 'export',
+  },
+  INVALID_SESSION_STATE: {
+    code: 'INVALID_SESSION_STATE',
+    userTitle: 'La sesión requiere reiniciarse',
+    userMessage:
+      'Detectamos una sesión inválida o inconsistente y detuvimos la operación para evitar cambios silenciosamente corruptos.',
+    userAction:
+      'Cierra la comparación actual, vuelve a cargar ambos libros y comparte el identificador de soporte si el problema se repite.',
+    status: 'blocked',
+    severity: 'critical',
+    stage: 'session',
+  },
 });
 
-export const VIEW_STATE_BY_STATUS = Object.freeze({
+const VIEW_STATE_BY_STATUS = Object.freeze({
   blocked: {
     tone: 'critical',
     canRetry: true,
@@ -61,6 +98,42 @@ export const VIEW_STATE_BY_STATUS = Object.freeze({
   },
 });
 
+function sanitizeForUser(value) {
+  if (!value) {
+    return undefined;
+  }
+
+  return String(value)
+    .replace(/(?:[A-Z]:)?[^\s]+\.(?:js|ts|json|xml|zip|xlsx|xlsm)/gi, '[archivo interno]')
+    .replace(/\b(?:TypeError|RangeError|SyntaxError|ReferenceError|OpenXml|ZipException|Stack trace)\b/gi, 'detalle interno')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function buildSupportReference(context = {}, code) {
+  const sessionToken = context.sessionId ? String(context.sessionId).slice(-8) : 'sin-sesion';
+  return `SUP-${code}-${sessionToken}`;
+}
+
+function resolveActionLabel(code) {
+  switch (code) {
+    case 'UNSUPPORTED_PILOT_FEATURES':
+      return 'Ver alcance del piloto';
+    case 'UNINTERPRETABLE_FORMULAS':
+      return 'Revisar fórmulas';
+    case 'WORKBOOK_TOO_LARGE':
+      return 'Ver límites operativos';
+    case 'CRITICAL_CONFLICTS_PENDING_EXPORT':
+      return 'Revisar conflictos críticos';
+    case 'PENDING_CONFLICTS_PENDING_EXPORT':
+      return 'Resolver pendientes';
+    case 'INVALID_SESSION_STATE':
+      return 'Reiniciar comparación';
+    default:
+      return 'Ver cómo resolverlo';
+  }
+}
+
 function buildVisibleOperationalLimits() {
   return {
     standard: [
@@ -68,10 +141,6 @@ function buildVisibleOperationalLimits() {
       'Hasta 25 hojas por libro.',
       'Hasta 200.000 celdas relevantes por comparación.',
       'Una operación activa por usuario y sesión.',
-    ],
-    extended: [
-      'Hasta 50 MB por archivo con advertencia de degradación controlada.',
-      'Si se supera el umbral estándar, el análisis puede ralentizarse o bloquearse para proteger Excel.',
     ],
     scope: [
       OPERATIONAL_LIMITS.platformScope.primary,
@@ -81,26 +150,29 @@ function buildVisibleOperationalLimits() {
   };
 }
 
-function createUserErrorView(input) {
-export function createUserErrorView(input) {
-  const engineError = normalizeEngineError(input);
-  const state = VIEW_STATE_BY_STATUS[engineError.status] || VIEW_STATE_BY_STATUS.blocked;
+function normalizeEngineError(input = {}) {
+  const code = input.code ?? 'INVALID_SESSION_STATE';
+  const definition = ERROR_DEFINITIONS[code] ?? ERROR_DEFINITIONS.INVALID_SESSION_STATE;
+  const context = input.context ?? {};
 
   return {
-    type: 'inline-banner',
-    tone: state.tone,
-    severityLabel: state.userSeverityLabel,
-    title: engineError.userTitle,
-    message: engineError.userMessage,
-    actionLabel: resolveActionLabel(engineError.code),
-    nextStep: engineError.userAction,
-    canRetry: state.canRetry,
-    canContinue: state.canContinue,
-    highlightPendingConflicts: state.highlightPendingConflicts,
-    supportHint: `Identificador de soporte: ${engineError.supportReference}`,
-    visibleOperationalLimits:
-      engineError.code === 'WORKBOOK_TOO_LARGE' ? buildVisibleOperationalLimits() : null,
-    telemetry: buildPresentedTelemetry(engineError, state),
+    ...definition,
+    supportReference: buildSupportReference(context, definition.code),
+    supportContext: {
+      sessionId: context.sessionId,
+      operation: context.operation,
+      limits: context.limits,
+      metrics: context.metrics,
+      pendingConflictCount: context.pendingConflictCount,
+      sessionStatus: context.sessionStatus,
+      invalidReason: context.invalidReason,
+    },
+    technicalDetails: {
+      source: context.source || 'merge-engine',
+      operation: context.operation,
+      diagnostics: context.diagnostics,
+      userHint: sanitizeForUser(context.userHint),
+    },
   };
 }
 
@@ -120,62 +192,58 @@ function buildPresentedTelemetry(engineError, state) {
   };
 }
 
-export function resolveActionLabel(code) {
-  switch (code) {
-    case 'CRITICAL_CONFLICTS_PENDING_EXPORT':
-      return 'Revisar conflictos críticos';
-    case 'PENDING_CONFLICTS_PENDING_EXPORT':
-      return 'Resolver pendientes';
-    case 'WORKBOOK_TOO_LARGE':
-      return 'Ver límites del MVP';
-    case 'UNSUPPORTED_PILOT_FEATURES':
-      return 'Ver alcance del piloto';
-    case 'AMBIGUOUS_STRUCTURAL_CHANGE':
-      return 'Revisar estructura';
-      return 'Ver límites operativos';
-    case 'INVALID_SESSION_STATE':
-      return 'Reiniciar comparación';
-    case 'UNINTERPRETABLE_FORMULAS':
-      return 'Revisar fórmulas';
-    default:
-      return 'Ver cómo resolverlo';
-  }
+export function createUserErrorView(input) {
+  const engineError = normalizeEngineError(input);
+  const state = VIEW_STATE_BY_STATUS[engineError.status] ?? VIEW_STATE_BY_STATUS.blocked;
+
+  return {
+    type: 'inline-banner',
+    tone: state.tone,
+    severityLabel: state.userSeverityLabel,
+    title: engineError.userTitle,
+    message: engineError.userMessage,
+    actionLabel: resolveActionLabel(engineError.code),
+    nextStep: engineError.userAction,
+    canRetry: state.canRetry,
+    canContinue: state.canContinue,
+    highlightPendingConflicts: state.highlightPendingConflicts,
+    supportHint: `Identificador de soporte: ${engineError.supportReference}`,
+    visibleOperationalLimits: engineError.code === 'WORKBOOK_TOO_LARGE' ? buildVisibleOperationalLimits() : null,
+    telemetry: buildPresentedTelemetry(engineError, state),
+  };
 }
 
-function buildExportGuard(summary = {}) {
+export function buildExportGuard(summary = {}) {
   if (summary.sessionInvalid || summary.sessionStatus === 'invalid') {
     return createUserErrorView({
       code: 'INVALID_SESSION_STATE',
       context: {
-        operation: 'export-result',
         sessionId: summary.sessionId,
+        operation: 'export-result',
         sessionStatus: summary.sessionStatus || 'invalid',
         invalidReason: summary.invalidReason || 'session invalid during export guard',
-        diagnostics: summary,
       },
     });
   }
 
-export function buildExportGuard(summary = {}) {
-  if (summary.criticalConflictsPending > 0) {
+  if ((summary.criticalConflictsPending ?? 0) > 0) {
     return createUserErrorView({
       code: 'CRITICAL_CONFLICTS_PENDING_EXPORT',
       context: {
         sessionId: summary.sessionId,
         operation: 'export-result',
         pendingConflictCount: summary.criticalConflictsPending,
-        diagnostics: summary,
       },
     });
   }
 
-  if (summary.totalPending > 0) {
+  if ((summary.totalPending ?? 0) > 0) {
     return createUserErrorView({
       code: 'PENDING_CONFLICTS_PENDING_EXPORT',
       context: {
+        sessionId: summary.sessionId,
         operation: 'export-result',
         pendingConflictCount: summary.totalPending,
-        diagnostics: summary,
       },
     });
   }
@@ -197,23 +265,15 @@ export function buildExportGuard(summary = {}) {
   };
 }
 
-function recordAddinError(logger, viewModel) {
-  const payload = viewModel.telemetry
-    ? {
-        ...viewModel.telemetry,
-        title: viewModel.title,
-      }
-    : null;
-
-  if (!payload) {
+export function recordAddinError(logger, viewModel) {
+  if (!viewModel?.telemetry) {
     return null;
   }
-export function recordAddinError(logger, viewModel) {
+
   const payload = {
-    event: 'excel_addin_user_error_presented',
+    ...viewModel.telemetry,
     tone: viewModel.tone,
     title: viewModel.title,
-    telemetry: viewModel.telemetry,
   };
 
   if (logger && typeof logger.error === 'function') {
@@ -227,56 +287,6 @@ export function recordAddinError(logger, viewModel) {
 
 export {
   VIEW_STATE_BY_STATUS,
-  buildExportGuard,
   buildVisibleOperationalLimits,
-  createUserErrorView,
-  recordAddinError,
   resolveActionLabel,
 };
-function normalizeEngineError(input = {}) {
-  const code = input.code || inferErrorCode(input);
-  const definition = ERROR_DEFINITIONS[code] || ERROR_DEFINITIONS.CORRUPT_FILE;
-  const context = input.context ?? {};
-
-  return {
-    ...definition,
-    supportContext: {
-      sessionId: context.sessionId,
-      workbookId: context.workbookId,
-      worksheetName: context.worksheetName,
-      fileName: context.fileName,
-      operation: context.operation,
-      limits: context.limits,
-      metrics: context.metrics,
-      pendingConflictCount: context.pendingConflictCount,
-    },
-    technicalDetails: {
-      source: context.source || 'merge-engine',
-      operation: context.operation,
-      rawMessage: input.cause?.message || context.rawMessage,
-      rawCode: input.cause?.code || context.rawCode,
-      stack: input.cause?.stack,
-      causeName: input.cause?.name,
-      diagnostics: context.diagnostics,
-    },
-  };
-}
-
-function inferErrorCode(input = {}) {
-  const probe = [input.rawCode, input.message, input.cause?.message]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
-
-  if (probe.includes('formula') || probe.includes('#ref!') || probe.includes('#name?')) {
-    return 'UNINTERPRETABLE_FORMULAS';
-  }
-  if (probe.includes('limit') || probe.includes('too large') || probe.includes('max cells')) {
-    return 'WORKBOOK_TOO_LARGE';
-  }
-  if (probe.includes('export') || probe.includes('critical conflict')) {
-    return 'CRITICAL_CONFLICTS_PENDING_EXPORT';
-  }
-
-  return input.fallbackCode || 'CORRUPT_FILE';
-}
