@@ -13,6 +13,23 @@ const DECISION_STATE_MAP = {
 function deepClone(value) {
   return value == null ? value : JSON.parse(JSON.stringify(value));
 }
+const SUPPORTED_TYPES = new Set(["string", "number", "boolean", "formula"]);
+'use strict';
+
+import { apply_merge_decisions, buildXlsxPayload } from './apply-merge-decisions.js';
+export { compare_workbooks, compare_worksheets, compare_cells } from './diff.js';
+export {
+  getWorksheetDimensions,
+  iterateWorksheets,
+  loadAndNormalizeWorkbook,
+  loadWorkbook,
+  normalizeExcelCellToCanonical,
+  normalizeWorkbook,
+  normalizeWorksheet,
+  shouldIgnoreCell,
+} from './xlsx-normalizer.js';
+
+const SUPPORTED_TYPES = new Set(['string', 'number', 'boolean', 'formula']);
 
 function inferCellType(conflict) {
   const candidateTypes = [conflict?.sourceA?.type, conflict?.sourceB?.type].filter(Boolean);
@@ -214,6 +231,29 @@ export function createMergeDecision({
     }
 
     manualEdit = {
+  const targetId = conflict.cellRef ?? conflict.cellRefs?.[0] ?? conflict.id;
+  const preview = {
+    targetId,
+    location: conflict.location,
+    value: validation.parsedValue,
+    displayValue: validation.displayValue,
+    type: validation.valueType,
+  };
+
+  return {
+    id: `decision:${targetId}:manual_edit`,
+    nodeType: 'MergeDecision',
+    targetType: 'cell',
+    targetId,
+    location: conflict.location,
+    changeType: conflict.changeType,
+    sourceA: conflict.sourceA,
+    sourceB: conflict.sourceB,
+    userDecision: 'manual_edit',
+    finalState: 'merged',
+    decidedBy,
+    decidedAt,
+    manualEdit: {
       rawValue: String(rawValue),
       value: validation.parsedValue,
       displayValue: validation.displayValue,
@@ -245,6 +285,8 @@ export function createMergeDecision({
       manualEdit,
       cellRefOverride: normalizedCellRefs[0],
     }),
+    },
+    preview,
   };
 }
 
@@ -307,6 +349,22 @@ function getDecisionForConflict(conflict, coverage) {
     coverage.byCellRef.get(conflict.cellRef) ||
     (conflict.cellRefs ?? []).map((cellRef) => coverage.byCellRef.get(cellRef)).find(Boolean) ||
     null
+export function applyDecisionToSession(session, decision) {
+  const targetId = decision.targetId;
+  const updatedConflicts = updateCollection(
+    session.conflicts ?? [],
+    (conflict) => conflict.id === targetId || conflict.cellRef === targetId || conflict.cellRefs?.includes(targetId),
+    (conflict) => ({
+      ...conflict,
+      userDecision: decision.userDecision,
+      finalState: decision.finalState,
+      resolution: {
+        type: 'manual_edit',
+        value: decision.manualEdit.value,
+        displayValue: decision.manualEdit.displayValue,
+        valueType: decision.manualEdit.type,
+      },
+    }),
   );
 }
 
@@ -337,6 +395,34 @@ function buildResolutionFromDecision(decision, fallbackNode) {
     displayValue: source?.displayValue ?? (source?.value == null ? null : String(source.value)),
     valueType: source?.type ?? inferCellType(fallbackNode),
     origin: normalizedDecisionType === 'accept_right' ? 'right' : 'left',
+  const updatedSheets = updateCollection(session.worksheetDiffs ?? [], () => true, (sheet) => ({
+    ...sheet,
+    cellDiffs: updateCollection(
+      sheet.cellDiffs ?? [],
+      (cellDiff) => cellDiff.id === targetId,
+      (cellDiff) => ({
+        ...cellDiff,
+        userDecision: decision.userDecision,
+        finalState: decision.finalState,
+        finalValue: {
+          value: decision.manualEdit.value,
+          displayValue: decision.manualEdit.displayValue,
+          type: decision.manualEdit.type,
+          origin: 'manual_edit',
+        },
+      }),
+    ),
+  }));
+
+  const mergedCellPreviews = {
+    ...(session.resultPreview?.cells ?? {}),
+    [targetId]: {
+      value: decision.manualEdit.value,
+      displayValue: decision.manualEdit.displayValue,
+      type: decision.manualEdit.type,
+      origin: 'manual_edit',
+      location: decision.location,
+    },
   };
 }
 
@@ -521,3 +607,32 @@ export function applyDecisionToSession(session, decision) {
 
 export { apply_merge_decisions, buildXlsxPayload };
 export { compare_workbooks, compare_worksheets, compare_cells } from './diff.js';
+    ...session,
+    mergeDecisions: [...(session.mergeDecisions ?? []), decision],
+    conflicts: updatedConflicts,
+    worksheetDiffs: updatedSheets,
+    resultPreview: {
+      ...(session.resultPreview ?? {}),
+      cells: mergedCellPreviews,
+      updatedAt: decision.decidedAt,
+    },
+    status: 'Ready',
+  };
+}
+
+export { apply_merge_decisions, buildXlsxPayload } from './apply-merge-decisions.js';
+export {
+  apply_merge_decisions,
+  buildXlsxPayload,
+} from './apply-merge-decisions.js';
+export {
+  compare_workbooks,
+  compare_worksheets,
+  compare_cells,
+} from './diff.js';
+export {
+  apply_merge_decisions,
+  buildXlsxPayload,
+};
+
+export { apply_merge_decisions, buildXlsxPayload };

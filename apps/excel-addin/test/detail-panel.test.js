@@ -7,9 +7,10 @@ import {
   saveManualEditFromPanel,
 } from '../src/detail-panel.js';
 
-function buildSession() {
+function buildNumberSession() {
   return {
     sessionId: 'session-1',
+    status: 'ready',
     conflicts: [
       {
         id: 'conflict:cell:sheet1:0:B4',
@@ -51,6 +52,28 @@ function buildSession() {
         ],
         conflicts: [],
       },
+        finalState: 'pending',
+      },
+    ],
+    mergeDecisions: [],
+    resultPreview: { cells: {} },
+  };
+}
+
+function buildFormulaSession() {
+  return {
+    sessionId: 'session-2',
+    conflicts: [
+      {
+        id: 'conflict:sheet2:C8',
+        cellRef: 'cell:sheet2:C8',
+        location: { worksheetName: 'Forecast', sheetIndex: 1, row: 8, column: 3, a1: 'C8', rangeA1: 'C8' },
+        changeType: 'conflict',
+        sourceA: { value: '=SUM(C2:C7)', displayValue: '=SUM(C2:C7)', type: 'formula', exists: true },
+        sourceB: { value: '=SUM(C2:C7)-C4', displayValue: '=SUM(C2:C7)-C4', type: 'formula', exists: true },
+        userDecision: 'unresolved',
+        finalState: 'pending'
+      }
     ],
     mergeDecisions: [],
     resultPreview: { cells: {} },
@@ -60,7 +83,10 @@ function buildSession() {
 
 test('detail panel exposes canonical actions and inline validation', () => {
   const invalidModel = buildConflictDetailPanelModel(buildSession(), 'conflict:cell:sheet1:0:B4', 'abc');
+test('detail panel exposes editable field and inline validation for value changes in pilot scope', () => {
+  const invalidModel = buildConflictDetailPanelModel(buildNumberSession(), 'conflict:sheet1:B4', 'abc');
   assert.equal(invalidModel.editableField.label, 'Valor final');
+  assert.equal(invalidModel.editableField.placeholder, 'Escribe el valor final manual (solo valor o fórmula simple)');
   assert.equal(invalidModel.editableField.expectedType, 'number');
   assert.equal(invalidModel.editableField.isValid, false);
   assert.match(invalidModel.editableField.validationMessage, /número válido/i);
@@ -68,6 +94,7 @@ test('detail panel exposes canonical actions and inline validation', () => {
   assert.equal(invalidModel.actions.acceptRightBlock.scopeType, 'block');
 
   const validModel = buildConflictDetailPanelModel(buildSession(), 'conflict:cell:sheet1:0:B4', '1450');
+  const validModel = buildConflictDetailPanelModel(buildNumberSession(), 'conflict:sheet1:B4', '1450');
   assert.equal(validModel.actions.saveManualEdit.enabled, true);
   assert.equal(validModel.actions.saveManualEdit.decisionType, 'manual_edit');
   assert.equal(validModel.preview.value, '1450');
@@ -76,6 +103,19 @@ test('detail panel exposes canonical actions and inline validation', () => {
 
 test('saving manual edit updates the full session state and preview', () => {
   const session = buildSession();
+test('detail panel validates simple formulas before saving manual edits', () => {
+  const invalidModel = buildConflictDetailPanelModel(buildFormulaSession(), 'conflict:sheet2:C8', 'SUM(C2:C7)');
+  assert.equal(invalidModel.editableField.expectedType, 'formula');
+  assert.equal(invalidModel.editableField.isValid, false);
+  assert.match(invalidModel.editableField.validationMessage, /deben empezar por '='|empezar por '='/i);
+
+  const validModel = buildConflictDetailPanelModel(buildFormulaSession(), 'conflict:sheet2:C8', '=SUM(C2:C7)-C5');
+  assert.equal(validModel.actions.saveManualEdit.enabled, true);
+  assert.equal(validModel.preview.value, '=SUM(C2:C7)-C5');
+});
+
+test('saving manual edit updates session preview state with manual_edit origin', () => {
+  const session = buildNumberSession();
   const action = saveManualEditFromPanel(session, {
     conflictId: 'conflict:cell:sheet1:0:B4',
     rawValue: '1550',
@@ -131,4 +171,38 @@ test('repeated decisions keep history and the latest state wins', () => {
   assert.equal(updated.mergeDecisions.length, 2);
   assert.equal(updated.conflicts[0].userDecision, 'accept_right');
   assert.equal(updated.resultPreview.cells['cell:sheet1:0:B4'].displayValue, '1350');
+  assert.equal(updated.status, 'attention_required');
+});
+
+test('invalid session state is rejected before mutating the session', () => {
+  const brokenSession = {
+    sessionId: 'session-bad',
+    status: 'ready',
+    conflicts: [],
+    mergeDecisions: [],
+  };
+
+  assert.throws(
+    () => buildConflictDetailPanelModel(brokenSession, 'conflict:sheet1:B4', '100'),
+    (error) => error.code === 'INVALID_SESSION_STATE' && /resultPreview missing/i.test(error.message),
+  );
+  assert.deepEqual(brokenSession, {
+    sessionId: 'session-bad',
+    status: 'ready',
+    conflicts: [],
+    mergeDecisions: [],
+  });
+});
+
+test('reduceSessionState rejects malformed actions instead of leaving a silent corruption', () => {
+  const session = buildSession();
+
+  assert.throws(
+    () => reduceSessionState(session, { type: 'SAVE_MANUAL_EDIT', payload: { targetId: 'cell:sheet1:B4' } }),
+    (error) => error.code === 'INVALID_SESSION_STATE' && /payload incomplete/i.test(error.message),
+  );
+  assert.equal(session.mergeDecisions.length, 0);
+  assert.deepEqual(session.resultPreview.cells, {});
+  assert.equal(updated.mergeDecisions[0].history[0].conflictId, 'conflict:sheet1:B4');
+  assert.equal(updated.supportExport.rows[0].affectedLocation, 'Summary!B4');
 });
