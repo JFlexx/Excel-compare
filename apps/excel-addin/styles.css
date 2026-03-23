@@ -442,3 +442,46 @@ h1 {
   opacity: 0.55;
   cursor: not-allowed;
 }
+
+.compare-form {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.field-label {
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.text-input {
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+}
+
+.helper-text {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.error-banner {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #f1c0bf;
+  background: #fde7e9;
+  color: #a4262c;
+  line-height: 1.5;
+}
+
+.summary-list {
+  margin: 0 0 18px;
+  padding-left: 20px;
+  color: var(--muted);
+  line-height: 1.6;
+}

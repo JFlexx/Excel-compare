@@ -450,7 +450,7 @@ function apply_merge_decisions(leftWorkbookInput, rightWorkbookInput, diff, deci
   };
 }
 
-module.exports = {
+export {
   apply_merge_decisions,
   buildXlsxPayload,
 };

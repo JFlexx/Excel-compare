@@ -1,3 +1,4 @@
+import { normalizeEngineError } from '../../../services/merge-engine/src/error-catalog.js';
 const ERROR_DEFINITIONS = Object.freeze({
   CORRUPT_FILE: {
     code: 'CORRUPT_FILE',
@@ -134,6 +135,13 @@ export function recordAddinError(logger, viewModel) {
   return payload;
 }
 
+export {
+  VIEW_STATE_BY_STATUS,
+  buildExportGuard,
+  createUserErrorView,
+  recordAddinError,
+  resolveActionLabel,
+};
 function normalizeEngineError(input = {}) {
   const code = input.code || inferErrorCode(input);
   const definition = ERROR_DEFINITIONS[code] || ERROR_DEFINITIONS.CORRUPT_FILE;
