@@ -223,6 +223,72 @@
         ],
         "userDecision": "manual_edit",
         "finalState": "merged"
+      },
+      "mergeDecision": {
+        "id": "decision:cell:summary:0:C10:manual_edit",
+        "nodeType": "MergeDecision",
+        "targetType": "cell",
+        "targetId": "cell:summary:0:C10",
+        "location": {
+          "worksheetName": "Summary",
+          "sheetIndex": 0,
+          "row": 10,
+          "column": 3,
+          "a1": "C10",
+          "rangeA1": "C10"
+        },
+        "changeType": "conflict",
+        "sourceA": {
+          "formula": "=SUM(C4:C9)",
+          "exists": true
+        },
+        "sourceB": {
+          "formula": "=SUM(C4:C8)+C9",
+          "exists": true
+        },
+        "userDecision": "manual_edit",
+        "finalState": "merged",
+        "decidedBy": "user:ana",
+        "decidedAt": "2026-03-23T10:40:00Z",
+        "manualEdit": {
+          "rawValue": "=SUM(C4:C8)+10",
+          "value": "=SUM(C4:C8)+10",
+          "displayValue": "=SUM(C4:C8)+10",
+          "type": "formula"
+        },
+        "preview": {
+          "targetId": "cell:summary:0:C10",
+          "location": {
+            "worksheetName": "Summary",
+            "sheetIndex": 0,
+            "row": 10,
+            "column": 3,
+            "a1": "C10",
+            "rangeA1": "C10"
+          },
+          "value": "=SUM(C4:C8)+10",
+          "displayValue": "=SUM(C4:C8)+10",
+          "type": "formula"
+        }
+      },
+      "resultPreview": {
+        "cells": {
+          "cell:summary:0:C10": {
+            "value": "=SUM(C4:C8)+10",
+            "displayValue": "=SUM(C4:C8)+10",
+            "type": "formula",
+            "origin": "manual_edit",
+            "location": {
+              "worksheetName": "Summary",
+              "sheetIndex": 0,
+              "row": 10,
+              "column": 3,
+              "a1": "C10",
+              "rangeA1": "C10"
+            }
+          }
+        },
+        "updatedAt": "2026-03-23T10:40:00Z"
       }
     },
     {
@@ -416,5 +482,24 @@
         "note": "Merged manually after validating totals and formulas."
       }
     }
-  ]
+  ],
+  "resultPreview": {
+    "cells": {
+      "cell:summary:0:C10": {
+        "value": "=SUM(C4:C8)+10",
+        "displayValue": "=SUM(C4:C8)+10",
+        "type": "formula",
+        "origin": "manual_edit",
+        "location": {
+          "worksheetName": "Summary",
+          "sheetIndex": 0,
+          "row": 10,
+          "column": 3,
+          "a1": "C10",
+          "rangeA1": "C10"
+        }
+      }
+    },
+    "updatedAt": "2026-03-23T10:40:00Z"
+  }
 }

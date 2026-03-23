@@ -113,6 +113,8 @@ Todos los nodos pueden exponer estos campos, aunque en algunos casos se rellenen
 
 - `userDecision`: `take_a`, `take_b`, `take_both`, `manual_edit`, `skip`, `unresolved`.
 - `finalState`: `pending`, `accepted_a`, `accepted_b`, `merged`, `discarded`, `unresolved`.
+- `manualEdit`: objeto opcional con `rawValue`, `value`, `displayValue` y `type` cuando la decisión final sea `manual_edit`.
+- `resultPreview`: instantánea serializable del valor final por celda para que UI y motor compartan la misma vista previa del resultado.
 
 ---
 
