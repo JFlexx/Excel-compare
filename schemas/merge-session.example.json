@@ -125,7 +125,27 @@
           "userDecision": "take_b",
           "finalState": "accepted_b",
           "decidedBy": "user:ana",
-          "decidedAt": "2026-03-23T10:35:00Z"
+          "decidedAt": "2026-03-23T10:35:00Z",
+          "history": [
+            {
+              "actionType": "selected_source",
+              "conflictId": "cell:summary:0:B4",
+              "decision": "take_b",
+              "finalValue": {
+                "value": 1350,
+                "displayValue": "1350",
+                "formula": null,
+                "type": "number"
+              },
+              "occurredAt": "2026-03-23T10:35:00Z",
+              "sessionId": "ms_demo_budget_001",
+              "actor": {
+                "userId": "user:ana",
+                "displayName": "Ana",
+                "origin": "office-addin"
+              }
+            }
+          ]
         }
       ],
       "mergeResult": {
@@ -157,6 +177,27 @@
         "output": {
           "workbookId": "wb_merged_budget_01",
           "path": "/files/budget.merged.value-change.xlsx"
+        },
+        "technicalSummary": {
+          "sessionId": "ms_demo_budget_001",
+          "generatedAt": "2026-03-23T10:35:10Z",
+          "decisionCount": 1,
+          "historyEntryCount": 1,
+          "conflicts": [
+            {
+              "decisionId": "decision:cell:summary:0:B4",
+              "conflictId": "cell:summary:0:B4",
+              "lastDecision": "take_b",
+              "lastOccurredAt": "2026-03-23T10:35:00Z",
+              "lastActor": "user:ana",
+              "lastFinalValue": "1350"
+            }
+          ]
+        },
+        "supportExport": {
+          "format": "jsonl",
+          "path": "/files/support/ms_demo_budget_001.simple-value-change.history.jsonl",
+          "generatedFrom": "mergeDecisions[*].history"
         }
       }
     },
@@ -223,6 +264,72 @@
         ],
         "userDecision": "manual_edit",
         "finalState": "merged"
+      },
+      "mergeDecision": {
+        "id": "decision:conflict:cell:summary:0:C10",
+        "nodeType": "MergeDecision",
+        "targetType": "conflict",
+        "targetId": "conflict:cell:summary:0:C10",
+        "location": {
+          "worksheetName": "Summary",
+          "sheetIndex": 0,
+          "row": 10,
+          "column": 3,
+          "a1": "C10",
+          "rangeA1": "C10"
+        },
+        "changeType": "conflict",
+        "sourceA": {
+          "formula": "=SUM(C4:C9)",
+          "value": 500,
+          "exists": true
+        },
+        "sourceB": {
+          "formula": "=SUM(C4:C8)+C9",
+          "value": 520,
+          "exists": true
+        },
+        "userDecision": "manual_edit",
+        "finalState": "merged",
+        "decidedBy": "user:ana",
+        "decidedAt": "2026-03-23T10:48:00Z",
+        "note": "Adjusted the formula to preserve the reviewed structure.",
+        "history": [
+          {
+            "actionType": "manual_edit",
+            "conflictId": "conflict:cell:summary:0:C10",
+            "decision": "manual_edit",
+            "finalValue": {
+              "value": 520,
+              "displayValue": "520",
+              "formula": "=SUM(C4:C8)+C9",
+              "type": "formula"
+            },
+            "occurredAt": "2026-03-23T10:48:00Z",
+            "sessionId": "ms_demo_budget_001",
+            "actor": {
+              "userId": "user:ana",
+              "displayName": "Ana",
+              "origin": "office-addin"
+            }
+          }
+        ]
+      },
+      "technicalSummary": {
+        "sessionId": "ms_demo_budget_001",
+        "generatedAt": "2026-03-23T10:48:05Z",
+        "decisionCount": 1,
+        "historyEntryCount": 1,
+        "conflicts": [
+          {
+            "decisionId": "decision:conflict:cell:summary:0:C10",
+            "conflictId": "conflict:cell:summary:0:C10",
+            "lastDecision": "manual_edit",
+            "lastOccurredAt": "2026-03-23T10:48:00Z",
+            "lastActor": "user:ana",
+            "lastFinalValue": "=SUM(C4:C8)+C9"
+          }
+        ]
       }
     },
     {
@@ -413,8 +520,88 @@
         "finalState": "merged",
         "decidedBy": "user:ana",
         "decidedAt": "2026-03-23T11:00:00Z",
-        "note": "Merged manually after validating totals and formulas."
+        "note": "Merged manually after validating totals and formulas.",
+        "history": [
+          {
+            "actionType": "selected_source",
+            "conflictId": "conflict:range:summary:0:D5:F6",
+            "decision": "take_b",
+            "finalValue": {
+              "value": "Reviewed allocation block",
+              "displayValue": "Reviewed allocation block",
+              "formula": null,
+              "type": "string"
+            },
+            "occurredAt": "2026-03-23T10:56:00Z",
+            "sessionId": "ms_demo_budget_001",
+            "actor": {
+              "userId": "user:ana",
+              "displayName": "Ana",
+              "origin": "office-addin"
+            }
+          },
+          {
+            "actionType": "manual_edit",
+            "conflictId": "conflict:range:summary:0:D5:F6",
+            "decision": "manual_edit",
+            "finalValue": {
+              "value": "Allocation block reviewed and totals validated",
+              "displayValue": "Allocation block reviewed and totals validated",
+              "formula": null,
+              "type": "string"
+            },
+            "occurredAt": "2026-03-23T11:00:00Z",
+            "sessionId": "ms_demo_budget_001",
+            "actor": {
+              "userId": "user:ana",
+              "displayName": "Ana",
+              "origin": "office-addin"
+            }
+          }
+        ]
+      },
+      "technicalSummary": {
+        "sessionId": "ms_demo_budget_001",
+        "generatedAt": "2026-03-23T11:00:05Z",
+        "decisionCount": 1,
+        "historyEntryCount": 2,
+        "conflicts": [
+          {
+            "decisionId": "decision:conflict:range:summary:0:D5:F6",
+            "conflictId": "conflict:range:summary:0:D5:F6",
+            "lastDecision": "manual_edit",
+            "lastOccurredAt": "2026-03-23T11:00:00Z",
+            "lastActor": "user:ana",
+            "lastFinalValue": "Allocation block reviewed and totals validated"
+          }
+        ]
+      },
+      "supportExport": {
+        "format": "jsonl",
+        "path": "/files/support/ms_demo_budget_001.range-conflict.history.jsonl",
+        "generatedFrom": "mergeDecision.history"
       }
     }
-  ]
+  ],
+  "technicalSummary": {
+    "sessionId": "ms_demo_budget_001",
+    "generatedAt": "2026-03-23T11:05:00Z",
+    "decisionCount": 2,
+    "historyEntryCount": 3,
+    "conflicts": [
+      {
+        "decisionId": "decision:conflict:range:summary:0:D5:F6",
+        "conflictId": "conflict:range:summary:0:D5:F6",
+        "lastDecision": "manual_edit",
+        "lastOccurredAt": "2026-03-23T11:00:00Z",
+        "lastActor": "user:ana",
+        "lastFinalValue": "Allocation block reviewed and totals validated"
+      }
+    ]
+  },
+  "supportExport": {
+    "format": "jsonl",
+    "path": "/files/support/ms_demo_budget_001.history.jsonl",
+    "generatedFrom": "examples[*].mergeDecision.history"
+  }
 }
