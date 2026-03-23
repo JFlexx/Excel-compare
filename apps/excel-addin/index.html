@@ -5,25 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Comparador de libros Excel</title>
     <link rel="stylesheet" href="./styles.css" />
+    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
   </head>
   <body>
     <div class="app-shell">
       <header class="app-header">
         <div>
           <p class="eyebrow">Excel Compare · Uso interno</p>
-          <h1>Resolución de conflictos</h1>
+          <h1>Sesión inicial de comparación</h1>
           <p class="intro">
             Revisa los libros comparados, guarda checkpoints de la sesión y decide si quieres reanudar o reiniciar el merge.
+            Selecciona el workbook base y el workbook comparado para normalizarlos, ejecutar el diff del MVP y guardar la sesión inicial.
           </p>
         </div>
         <div class="status-summary" aria-label="Resumen de la comparación">
           <div>
-            <span class="summary-label">Pendientes</span>
-            <strong id="pending-count">0</strong>
+            <span class="summary-label">Hojas afectadas</span>
+            <strong id="summary-sheets">0</strong>
           </div>
           <div>
-            <span class="summary-label">Resueltos</span>
-            <strong id="resolved-count">0</strong>
+            <span class="summary-label">Conflictos pendientes</span>
+            <strong id="summary-pending">0</strong>
+          </div>
+          <div>
+            <span class="summary-label">Cambios auto-resueltos</span>
+            <strong id="summary-auto-resolved">0</strong>
           </div>
           <div>
             <span class="summary-label">Progreso</span>
@@ -58,18 +64,44 @@
           <button id="resume-action" class="action-button primary" type="button">Reanudar sesión</button>
           <button id="discard-resume" class="action-button secondary" type="button">Descartar y empezar de nuevo</button>
         </div>
+      <section class="host-banner" id="host-banner" aria-live="polite">
+        <div>
+          <div class="host-banner-header">
+            <strong>Estado del host</strong>
+            <span class="chip chip-neutral" id="host-badge">Cargando</span>
+          </div>
+          <p id="host-message">Conectando con Excel y cargando la merge session…</p>
+          <p class="host-details" id="host-details"></p>
+        </div>
+        <button class="action-button secondary host-action" id="reconnect-host" type="button">Reconectar</button>
       </section>
 
       <main class="layout-grid">
         <section class="panel panel-files" aria-labelledby="files-title">
           <div class="panel-heading">
-            <h2 id="files-title">Libros comparados</h2>
-            <span class="chip chip-neutral">2 archivos</span>
+            <h2 id="files-title">Entrada de workbooks</h2>
+            <span class="chip chip-neutral">Flujo MVP</span>
           </div>
+
+          <form id="compare-form" class="compare-form">
+            <label class="field-label" for="base-workbook-path">Ruta del libro base</label>
+            <input id="base-workbook-path" class="text-input" type="text" placeholder="/files/budget.base.xlsx" />
+
+            <label class="field-label" for="compared-workbook-path">Ruta del libro comparado</label>
+            <input id="compared-workbook-path" class="text-input" type="text" placeholder="/files/budget.review.xlsx" />
+
+            <button id="run-compare" class="action-button primary" type="submit">Comparar workbooks</button>
+            <p id="compare-status" class="helper-text">Selecciona ambos workbooks para generar la sesión inicial.</p>
+            <p id="compare-error" class="error-banner" hidden></p>
+          </form>
 
           <div class="file-card-group" id="file-summary"></div>
 
           <div class="compare-note">
+            <p>
+              <strong>Workbook activo:</strong>
+              <span id="active-workbook">—</span>
+            </p>
             <p>
               <strong>Hoja activa:</strong>
               <span id="active-sheet">—</span>
@@ -83,12 +115,16 @@
 
         <section class="panel panel-conflicts" aria-labelledby="conflicts-title">
           <div class="panel-heading">
-            <h2 id="conflicts-title">Conflictos detectados</h2>
+            <h2 id="conflicts-title">Resumen inicial</h2>
             <span class="chip chip-alert" id="conflict-counter">0 pendientes</span>
           </div>
 
+          <ul class="summary-list" id="summary-lines" aria-live="polite">
+            <li>Aún no hay una sesión de comparación generada.</li>
+          </ul>
+
           <div class="conflict-toolbar">
-            <label class="toolbar-label" for="status-filter">Filtrar</label>
+            <label class="toolbar-label" for="status-filter">Filtrar conflictos</label>
             <select id="status-filter" class="toolbar-select">
               <option value="all">Todos</option>
               <option value="pending">Pendientes</option>
@@ -106,7 +142,7 @@
           </div>
 
           <div id="detail-empty" class="empty-state">
-            Selecciona un conflicto para ver la hoja, la celda afectada y los valores de ambos lados.
+            Genera una sesión y selecciona un conflicto para revisar la hoja, la celda afectada y los valores de ambos lados.
           </div>
 
           <div id="detail-content" class="detail-content" hidden>
@@ -128,7 +164,7 @@
             <div class="value-columns">
               <article class="value-card">
                 <div class="value-card-header">
-                  <h3>Valor izquierdo</h3>
+                  <h3>Libro base</h3>
                   <span class="value-caption" id="left-book-name">—</span>
                 </div>
                 <pre id="left-value" class="value-box">—</pre>
@@ -138,7 +174,7 @@
 
               <article class="value-card">
                 <div class="value-card-header">
-                  <h3>Valor derecho</h3>
+                  <h3>Libro comparado</h3>
                   <span class="value-caption" id="right-book-name">—</span>
                 </div>
                 <pre id="right-value" class="value-box">—</pre>
@@ -163,7 +199,7 @@
 
             <div class="resolution-summary">
               <h3>Estado del conflicto</h3>
-              <p id="resolution-message">Pendiente de resolución.</p>
+              <p id="resolution-message">Pendiente de revisión.</p>
             </div>
           </div>
         </section>
