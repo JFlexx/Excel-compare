@@ -1,5 +1,9 @@
 {
   "name": "@excel-compare/merge-engine",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
   "version": "0.1.0",
   "private": true,
   "type": "module",
