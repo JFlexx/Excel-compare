@@ -1,3 +1,6 @@
+import { apply_merge_decisions, buildXlsxPayload } from './apply-merge-decisions.js';
+
+const SUPPORTED_TYPES = new Set(["string", "number", "boolean", "formula"]);
 'use strict';
 
 import { apply_merge_decisions, buildXlsxPayload } from './apply-merge-decisions.js';
@@ -236,5 +239,9 @@ export {
   compare_worksheets,
   compare_cells,
 } from './diff.js';
+export {
+  apply_merge_decisions,
+  buildXlsxPayload,
+};
 
 export { apply_merge_decisions, buildXlsxPayload };

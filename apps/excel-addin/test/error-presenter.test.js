@@ -67,6 +67,7 @@ test('buildExportGuard blocks export while critical conflicts remain', () => {
   assert.equal(guard.telemetry.supportContext.pendingConflictCount, 2);
 });
 
+test('buildExportGuard blocks export when non-critical pending decisions remain', () => {
 test('buildExportGuard surfaces invalid sessions before export', () => {
   const guard = buildExportGuard({
     sessionId: 'session-bad-01',
@@ -83,6 +84,14 @@ test('buildExportGuard surfaces invalid sessions before export', () => {
 
 test('buildExportGuard allows export when no critical conflicts remain', () => {
   const guard = buildExportGuard({ criticalConflictsPending: 0, totalPending: 1 });
+
+  assert.equal(guard.title, 'Debes resolver los pendientes antes de exportar');
+  assert.equal(guard.canContinue, false);
+  assert.equal(guard.actionLabel, 'Resolver pendientes');
+});
+
+test('buildExportGuard allows export when no critical conflicts remain', () => {
+  const guard = buildExportGuard({ criticalConflictsPending: 0, totalPending: 0 });
 
   assert.equal(guard.title, 'Listo para exportar');
   assert.equal(guard.canContinue, true);

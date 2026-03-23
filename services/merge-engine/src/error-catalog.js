@@ -111,6 +111,49 @@ export const ERROR_DEFINITIONS = Object.freeze({
     severity: 'error',
     stage: 'export',
   },
+  PENDING_CONFLICTS_PENDING_EXPORT: {
+    code: 'PENDING_CONFLICTS_PENDING_EXPORT',
+    userTitle: 'Debes resolver los pendientes antes de exportar',
+    userMessage:
+      'Todavía quedan conflictos o decisiones pendientes. Revísalos antes de generar el archivo final para evitar un resultado incompleto.',
+    userAction:
+      'Vuelve a la revisión final, localiza los pendientes y termina esas decisiones antes de exportar.',
+    status: 'blocked',
+    severity: 'error',
+    stage: 'export',
+  },
+  EXPORT_VALIDATION_FAILED: {
+    code: 'EXPORT_VALIDATION_FAILED',
+    userTitle: 'La sesión no está lista para generar el archivo final',
+    userMessage:
+      'Detectamos una inconsistencia entre la sesión, el diff o las decisiones guardadas. Revisa la sesión y vuelve a intentarlo.',
+    userAction:
+      'Actualiza la sesión de merge, confirma que las decisiones pertenezcan a esta comparación y vuelve a generar el resultado.',
+    status: 'blocked',
+    severity: 'error',
+    stage: 'export',
+  },
+  MERGE_RESULT_GENERATION_FAILED: {
+    code: 'MERGE_RESULT_GENERATION_FAILED',
+    userTitle: 'No pudimos generar el archivo final',
+    userMessage:
+      'Ocurrió un problema al construir el resultado consolidado. Intenta de nuevo y, si el error continúa, vuelve a abrir la comparación.',
+    userAction:
+      'Reintenta la generación del archivo final o vuelve a cargar la comparación.',
+    status: 'blocked',
+    severity: 'error',
+    stage: 'export',
+  },
+  MERGE_RESULT_DOWNLOAD_FAILED: {
+    code: 'MERGE_RESULT_DOWNLOAD_FAILED',
+    userTitle: 'No pudimos descargar el archivo final',
+    userMessage:
+      'Generamos el resultado, pero no fue posible iniciar la descarga del archivo. Verifica los permisos de descarga del navegador o del add-in e inténtalo de nuevo.',
+    userAction:
+      'Comprueba que el navegador permita descargas y vuelve a intentar la exportación.',
+    status: 'blocked',
+    severity: 'error',
+    stage: 'export',
   INVALID_SESSION_STATE: {
     code: 'INVALID_SESSION_STATE',
     userTitle: 'La sesión requiere reiniciarse',
@@ -217,6 +260,9 @@ export function inferErrorCode(input = {}) {
   }
   if (probe.includes('limit') || probe.includes('too large') || probe.includes('max cells') || probe.includes('25 mb')) {
     return 'WORKBOOK_TOO_LARGE';
+  }
+  if (probe.includes('pending conflict') || probe.includes('pending decision')) {
+    return 'PENDING_CONFLICTS_PENDING_EXPORT';
   }
   if (probe.includes('export') || probe.includes('critical conflict')) {
     return 'CRITICAL_CONFLICTS_PENDING_EXPORT';

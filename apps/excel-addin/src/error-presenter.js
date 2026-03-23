@@ -124,6 +124,8 @@ export function resolveActionLabel(code) {
   switch (code) {
     case 'CRITICAL_CONFLICTS_PENDING_EXPORT':
       return 'Revisar conflictos críticos';
+    case 'PENDING_CONFLICTS_PENDING_EXPORT':
+      return 'Resolver pendientes';
     case 'WORKBOOK_TOO_LARGE':
       return 'Ver límites del MVP';
     case 'UNSUPPORTED_PILOT_FEATURES':
@@ -162,6 +164,17 @@ export function buildExportGuard(summary = {}) {
         sessionId: summary.sessionId,
         operation: 'export-result',
         pendingConflictCount: summary.criticalConflictsPending,
+        diagnostics: summary,
+      },
+    });
+  }
+
+  if (summary.totalPending > 0) {
+    return createUserErrorView({
+      code: 'PENDING_CONFLICTS_PENDING_EXPORT',
+      context: {
+        operation: 'export-result',
+        pendingConflictCount: summary.totalPending,
         diagnostics: summary,
       },
     });
