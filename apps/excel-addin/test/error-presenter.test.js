@@ -1,11 +1,11 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
+import test from 'node:test';
+import assert from 'node:assert/strict';
 
-const {
+import {
   buildExportGuard,
   createUserErrorView,
   recordAddinError,
-} = require('../src/error-presenter');
+} from '../src/error-presenter.js';
 
 test('createUserErrorView turns engine errors into user-facing copy without raw technical text', () => {
   const view = createUserErrorView({
@@ -32,8 +32,16 @@ test('buildExportGuard blocks export while critical conflicts remain', () => {
   assert.equal(guard.telemetry.supportContext.pendingConflictCount, 2);
 });
 
-test('buildExportGuard allows export when no critical conflicts remain', () => {
+test('buildExportGuard blocks export when non-critical pending decisions remain', () => {
   const guard = buildExportGuard({ criticalConflictsPending: 0, totalPending: 1 });
+
+  assert.equal(guard.title, 'Debes resolver los pendientes antes de exportar');
+  assert.equal(guard.canContinue, false);
+  assert.equal(guard.actionLabel, 'Resolver pendientes');
+});
+
+test('buildExportGuard allows export when no critical conflicts remain', () => {
+  const guard = buildExportGuard({ criticalConflictsPending: 0, totalPending: 0 });
 
   assert.equal(guard.title, 'Listo para exportar');
   assert.equal(guard.canContinue, true);

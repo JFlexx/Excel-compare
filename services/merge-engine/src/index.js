@@ -1,3 +1,5 @@
+import { apply_merge_decisions, buildXlsxPayload } from './apply-merge-decisions.js';
+
 const SUPPORTED_TYPES = new Set(["string", "number", "boolean", "formula"]);
 
 function inferCellType(conflict) {
@@ -210,16 +212,13 @@ export function applyDecisionToSession(session, decision) {
     status: "Ready"
   };
 }
-'use strict';
 
-const { apply_merge_decisions, buildXlsxPayload } = require('./apply-merge-decisions');
-
-module.exports = {
-  apply_merge_decisions,
-  buildXlsxPayload,
-};
 export {
   compare_workbooks,
   compare_worksheets,
   compare_cells,
 } from './diff.js';
+export {
+  apply_merge_decisions,
+  buildXlsxPayload,
+};

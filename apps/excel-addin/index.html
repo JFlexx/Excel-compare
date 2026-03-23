@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Comparador de libros Excel</title>
     <link rel="stylesheet" href="./styles.css" />
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
   </head>
   <body>
     <div class="app-shell">
@@ -120,8 +121,53 @@
           </div>
         </section>
       </main>
+
+      <section class="panel panel-final-review" aria-labelledby="final-review-title">
+        <div class="panel-heading">
+          <h2 id="final-review-title">Revisión final y exportación</h2>
+          <span class="chip chip-neutral">Paso final</span>
+        </div>
+
+        <div id="final-banner" class="banner banner-success"></div>
+
+        <div class="final-grid">
+          <article class="summary-card">
+            <h3>Validaciones de consistencia</h3>
+            <ul id="final-consistency" class="summary-list"></ul>
+          </article>
+
+          <article class="summary-card">
+            <h3>Conflictos resueltos</h3>
+            <ul id="final-resolved-list" class="summary-list"></ul>
+          </article>
+
+          <article class="summary-card">
+            <h3>Decisiones por tipo</h3>
+            <ul id="final-decision-types" class="summary-list"></ul>
+          </article>
+
+          <article class="summary-card">
+            <h3>Hojas afectadas</h3>
+            <ul id="final-sheets" class="summary-list"></ul>
+          </article>
+
+          <article class="summary-card summary-card-wide">
+            <h3>Pendientes restantes</h3>
+            <ul id="final-pending-list" class="summary-list"></ul>
+          </article>
+        </div>
+
+        <div class="export-box">
+          <label class="toolbar-label" for="export-file-name">Nombre del archivo final</label>
+          <div class="export-controls">
+            <input id="export-file-name" class="export-input" type="text" placeholder="resultado_merge.xlsx" />
+            <button id="export-button" class="action-button primary">Exportar .xlsx</button>
+          </div>
+          <p id="export-message" class="export-message" aria-live="polite"></p>
+        </div>
+      </section>
     </div>
 
-    <script src="./app.js"></script>
+    <script type="module" src="./app.js"></script>
   </body>
 </html>
