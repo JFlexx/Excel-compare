@@ -1,4 +1,10 @@
-import { compare_workbooks, loadAndNormalizeWorkbook } from '../../../services/merge-engine/src/index.js';
+import {
+  OFFICIAL_MVP_FLOW,
+  OFFICIAL_MVP_FLOW_LABELS,
+  buildVisibleMvpLimits,
+  compare_workbooks,
+  loadAndNormalizeWorkbook,
+} from '../../../services/merge-engine/src/index.js';
 
 export const MVP_COMPARE_OPTIONS = Object.freeze({
   conflictOnValueMismatch: false,
@@ -31,15 +37,14 @@ export function compareSelectedWorkbookFiles({
     throw new Error('Both baseWorkbook.path and comparedWorkbook.path are required.');
   }
 
-  const selectionA = createWorkbookSelection('base', baseWorkbook.path, baseWorkbook);
-  const selectionB = createWorkbookSelection('compared', comparedWorkbook.path, comparedWorkbook);
-
-  const canonicalA = loadAndNormalizeWorkbook(selectionA.path, normalizationOptions);
-  const canonicalB = loadAndNormalizeWorkbook(selectionB.path, normalizationOptions);
+  const sourceASelection = createWorkbookSelection('base', baseWorkbook.path, baseWorkbook);
+  const sourceBSelection = createWorkbookSelection('compared', comparedWorkbook.path, comparedWorkbook);
+  const canonicalA = loadAndNormalizeWorkbook(sourceASelection.path, normalizationOptions);
+  const canonicalB = loadAndNormalizeWorkbook(sourceBSelection.path, normalizationOptions);
 
   return createSessionFromCanonicalWorkbooks({
-    sourceASelection: selectionA,
-    sourceBSelection: selectionB,
+    sourceASelection,
+    sourceBSelection,
     canonicalA,
     canonicalB,
     compareOptions,
@@ -63,28 +68,43 @@ export function createSessionFromCanonicalWorkbooks({
   const sourceB = buildSourceDescriptor(sourceBSelection, canonicalB);
   const comparableA = canonicalWorkbookToComparableWorkbook(canonicalA, sourceA);
   const comparableB = canonicalWorkbookToComparableWorkbook(canonicalB, sourceB);
+  const sourceAWorkbook = canonicalWorkbookToSessionWorkbook(canonicalA, sourceA);
+  const sourceBWorkbook = canonicalWorkbookToSessionWorkbook(canonicalB, sourceB);
   const workbookDiff = compare_workbooks(comparableA, comparableB, compareOptions);
   const summary = buildSessionSummary(workbookDiff);
   const sessionId = createSessionId(createdAt, sourceA.label, sourceB.label);
+  const checkpoint = createSessionCheckpoint({
+    sessionId,
+    type: 'checkpoint_persisted',
+    step: 'persist_checkpoint',
+    occurredAt: createdAt,
+    payload: {
+      workbookDiffId: workbookDiff.id,
+      pendingConflictCount: summary.pendingConflictCount,
+    },
+  });
 
   return {
     sessionId,
     createdAt,
+    updatedAt: createdAt,
+    officialFlow: buildOfficialFlowDescriptor('persist_checkpoint'),
     sourceA,
     sourceB,
-    workbookDiffId: workbookDiff.id,
-    changeType: workbookDiff.changeType,
-    userDecision: workbookDiff.userDecision,
-    finalState: workbookDiff.finalState,
+    sourceAWorkbook,
+    sourceBWorkbook,
+    workbookDiff,
     worksheetDiffs: workbookDiff.worksheetDiffs,
     conflicts: workbookDiff.conflicts,
     mergeDecisions: [],
+    checkpoints: [checkpoint],
     summary,
     status: deriveSessionStatus(summary),
     resultPreview: {
       cells: {},
       updatedAt: null,
     },
+    mvpLimits: buildVisibleMvpLimits(),
   };
 }
 
@@ -147,10 +167,58 @@ export function canonicalWorkbookToComparableWorkbook(canonicalWorkbook, source)
         column: cell.column,
         value: parseCanonicalCellValue(cell),
         displayValue: cell.visibleValue,
-        formula: cell.formula,
+        formula: cell.formula ? `=${cell.formula.replace(/^=/, '')}` : null,
         type: normalizeComparableType(cell),
       })),
     })),
+  };
+}
+
+export function canonicalWorkbookToSessionWorkbook(canonicalWorkbook, source) {
+  return {
+    workbookId: source.workbookId,
+    label: source.label,
+    metadata: {
+      workbookName: canonicalWorkbook.workbookName,
+      sheetOrder: canonicalWorkbook.sheetOrder ?? [],
+    },
+    worksheets: (canonicalWorkbook.worksheets ?? []).map((worksheet) => ({
+      worksheetId: createWorksheetId(worksheet.name, worksheet.index),
+      id: createWorksheetId(worksheet.name, worksheet.index),
+      name: worksheet.name,
+      sheetIndex: worksheet.index,
+      index: worksheet.index,
+      cells: Object.fromEntries((worksheet.cells ?? []).map((cell) => [cell.address, ({
+        value: parseCanonicalCellValue(cell),
+        displayValue: cell.visibleValue,
+        formula: cell.formula ? `=${cell.formula.replace(/^=/, '')}` : null,
+        type: normalizeComparableType(cell),
+        exists: true,
+      })])),
+    })),
+  };
+}
+
+export function buildOfficialFlowDescriptor(currentStep) {
+  return {
+    steps: OFFICIAL_MVP_FLOW.map((step, index) => ({
+      step,
+      label: OFFICIAL_MVP_FLOW_LABELS[step],
+      order: index + 1,
+      status: step === currentStep ? 'current' : OFFICIAL_MVP_FLOW.indexOf(step) < OFFICIAL_MVP_FLOW.indexOf(currentStep) ? 'completed' : 'pending',
+    })),
+    currentStep,
+  };
+}
+
+export function createSessionCheckpoint({ sessionId, type, step, occurredAt, payload = {} }) {
+  return {
+    id: `checkpoint:${sessionId}:${type}:${occurredAt}`,
+    type,
+    sessionId,
+    flowStep: step,
+    occurredAt,
+    ...payload,
   };
 }
 
@@ -182,12 +250,12 @@ function deriveSessionStatus(summary) {
     return 'no_changes';
   }
 
-  return 'ready';
+  return 'ready_for_review';
 }
 
 function parseCanonicalCellValue(cell) {
   if (cell.formula) {
-    return cell.visibleValue ?? cell.formula;
+    return cell.visibleValue ?? `=${cell.formula.replace(/^=/, '')}`;
   }
 
   if (cell.visibleValue === null || cell.visibleValue === undefined) {

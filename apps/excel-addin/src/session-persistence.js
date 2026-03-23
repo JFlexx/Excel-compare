@@ -1,4 +1,6 @@
 import { createManualEditDecision } from './manual-edit.js';
+import { buildOfficialFlowDescriptor, createSessionCheckpoint } from './compare-session.js';
+import { buildVisibleMvpLimits } from '../../../services/merge-engine/src/mvp-config.js';
 
 export const SESSION_STORAGE_KEY = 'excel-compare.merge-session';
 
@@ -32,7 +34,7 @@ function formatWorkbookMetadata(file) {
     fileName: file.fileName,
     updatedAt: file.updatedAt,
     size: file.size,
-    sheets: [...(file.sheets ?? [])]
+    sheets: [...(file.sheets ?? [])],
   };
 }
 
@@ -43,7 +45,7 @@ export function buildWorkbookFingerprint(file) {
   return {
     workbookId: `wb:${file.side}:${checksum}`,
     checksum,
-    metadata
+    metadata,
   };
 }
 
@@ -59,7 +61,7 @@ function createLocation(sheet, cellRef, sheetIndex) {
     row,
     column,
     a1: match ? `${columnRef}${row}` : null,
-    rangeA1: match ? `${columnRef}${row}` : null
+    rangeA1: match ? `${columnRef}${row}` : null,
   };
 }
 
@@ -71,15 +73,12 @@ function mapResolutionToDecision(conflict) {
   if (conflict.userDecision && conflict.userDecision !== 'unresolved') {
     return conflict.userDecision;
   }
-
   if (conflict.resolution === 'left') {
     return LEFT_DECISION;
   }
-
   if (conflict.resolution === 'right') {
     return RIGHT_DECISION;
   }
-
   return 'unresolved';
 }
 
@@ -92,8 +91,20 @@ function buildFinalStateFromDecision(decision) {
     case 'manual_edit':
       return 'merged';
     default:
-      return 'pending';
+      return 'unresolved';
   }
+}
+
+function normalizeRawValue(value) {
+  const formula = typeof value === 'string' && value.startsWith('=') ? value : null;
+  const type = formula ? 'formula' : typeof value === 'number' ? 'number' : typeof value === 'boolean' ? 'boolean' : 'string';
+  return {
+    value,
+    displayValue: value == null ? '' : String(value),
+    formula,
+    type,
+    exists: true,
+  };
 }
 
 function buildConflictNode(conflict, files) {
@@ -102,40 +113,54 @@ function buildConflictNode(conflict, files) {
   const cellRef = conflict.cellRef ?? buildCellRef(conflict.sheet, sheetIndex, conflict.cell);
   const userDecision = mapResolutionToDecision(conflict);
   const finalState = buildFinalStateFromDecision(userDecision);
+  const sourceA = conflict.sourceA ?? normalizeRawValue(conflict.leftValue);
+  const sourceB = conflict.sourceB ?? normalizeRawValue(conflict.rightValue);
 
   return {
     id: conflict.id,
     nodeType: 'Conflict',
+    scopeType: 'cell',
     targetType: 'cell',
     targetId: cellRef,
     cellRef,
+    cellRefs: [cellRef],
+    worksheetDiffId: `wsd:${slugify(conflict.sheet)}:${sheetIndex}`,
     location,
-    changeType: 'conflict',
-    sourceA: {
-      value: conflict.leftValue,
-      displayValue: String(conflict.leftValue),
-      formula: typeof conflict.leftValue === 'string' && conflict.leftValue.startsWith('=') ? conflict.leftValue : null,
-      type: typeof conflict.leftValue === 'string' && conflict.leftValue.startsWith('=') ? 'formula' : typeof conflict.leftValue === 'number' ? 'number' : 'string',
-      exists: true
-    },
-    sourceB: {
-      value: conflict.rightValue,
-      displayValue: String(conflict.rightValue),
-      formula: typeof conflict.rightValue === 'string' && conflict.rightValue.startsWith('=') ? conflict.rightValue : null,
-      type: typeof conflict.rightValue === 'string' && conflict.rightValue.startsWith('=') ? 'formula' : typeof conflict.rightValue === 'number' ? 'number' : 'string',
-      exists: true
-    },
+    changeType: conflict.changeType ?? 'conflict',
+    sourceA,
+    sourceB,
     description: conflict.description,
+    reason: conflict.reason ?? conflict.description,
     status: conflict.status,
     resolution: conflict.resolution,
     userDecision,
     finalState,
-    history: [...(conflict.history ?? [])]
+    history: [...(conflict.history ?? [])],
   };
 }
 
-function buildWorksheetDiff(sheet, sheetIndex, conflicts) {
+function buildWorksheetDiff(sheet, sheetIndex, conflicts, sourceAWorkbook, sourceBWorkbook) {
   const sheetKey = `${slugify(sheet)}:${sheetIndex}`;
+  const cellDiffs = conflicts.map((conflict) => ({
+    id: conflict.cellRef,
+    nodeType: 'CellDiff',
+    worksheetId: `ws:${sheetKey}`,
+    location: conflict.location,
+    changeType: conflict.changeType,
+    sourceA: conflict.sourceA,
+    sourceB: conflict.sourceB,
+    userDecision: conflict.userDecision,
+    finalState: conflict.finalState,
+    conflictIds: [conflict.id],
+    finalValue: conflict.userDecision === 'manual_edit'
+      ? {
+          value: conflict.resolution?.value,
+          displayValue: conflict.resolution?.displayValue,
+          type: conflict.resolution?.valueType,
+          origin: 'manual_edit',
+        }
+      : null,
+  }));
 
   return {
     id: `wsd:${sheetKey}`,
@@ -147,82 +172,75 @@ function buildWorksheetDiff(sheet, sheetIndex, conflicts) {
       row: null,
       column: null,
       a1: null,
-      rangeA1: `${sheet}!A1:XFD1048576`
+      rangeA1: `${sheet}!A1:XFD1048576`,
     },
-    changeType: conflicts.some((conflict) => conflict.finalState === 'pending') ? 'conflict' : 'modified',
-    sourceA: { name: sheet, exists: true },
-    sourceB: { name: sheet, exists: true },
-    userDecision: conflicts.every((conflict) => conflict.finalState !== 'pending') ? 'resolved' : 'unresolved',
-    finalState: conflicts.every((conflict) => conflict.finalState !== 'pending') ? 'merged' : 'pending',
-    cellDiffs: conflicts.map((conflict) => ({
-      id: conflict.cellRef,
-      nodeType: 'CellDiff',
-      worksheetId: `ws:${sheetKey}`,
-      location: conflict.location,
-      changeType: conflict.changeType,
-      sourceA: conflict.sourceA,
-      sourceB: conflict.sourceB,
-      userDecision: conflict.userDecision,
-      finalState: conflict.finalState,
-      conflictIds: [conflict.id],
-      finalValue: conflict.resolution?.type === 'manual_edit'
-        ? {
-            value: conflict.resolution.value,
-            displayValue: conflict.resolution.displayValue,
-            type: conflict.resolution.valueType,
-            origin: 'manual_edit'
-          }
-        : null
-    })),
-    conflicts
+    changeType: conflicts.some((conflict) => conflict.finalState === 'unresolved') ? 'conflict' : 'modified',
+    sourceA: { name: sheet, exists: Boolean(sourceAWorkbook.worksheets[sheetIndex]) },
+    sourceB: { name: sheet, exists: Boolean(sourceBWorkbook.worksheets[sheetIndex]) },
+    userDecision: conflicts.every((conflict) => conflict.finalState !== 'unresolved') ? 'resolved' : 'unresolved',
+    finalState: conflicts.every((conflict) => conflict.finalState !== 'unresolved') ? 'merged' : 'unresolved',
+    cellDiffs,
+    conflicts,
   };
 }
 
-function buildWorkbookDiff(session, worksheetDiffs, files, sourceA, sourceB) {
+function buildWorkbookFromFiles(source, file, conflicts) {
+  const cellsBySheet = new Map();
+  for (const conflict of conflicts) {
+    const key = `${conflict.location.worksheetName}#${conflict.location.sheetIndex}`;
+    const sheet = cellsBySheet.get(key) ?? {
+      id: `ws:${slugify(conflict.location.worksheetName)}:${conflict.location.sheetIndex}`,
+      name: conflict.location.worksheetName,
+      index: conflict.location.sheetIndex,
+      cells: {},
+    };
+    sheet.cells[conflict.location.a1] = source === 'sourceA' ? conflict.sourceA : conflict.sourceB;
+    cellsBySheet.set(key, sheet);
+  }
+
   return {
-    id: `wbd:${sourceA.workbookId}:${sourceB.workbookId}`,
+    workbookId: source.workbookId,
+    label: file?.fileName,
+    worksheets: [...cellsBySheet.values()].sort((left, right) => left.index - right.index),
+  };
+}
+
+function buildWorkbookDiff(session, worksheetDiffs) {
+  return {
+    id: `wbd:${session.sourceA.workbookId}:${session.sourceB.workbookId}`,
     nodeType: 'WorkbookDiff',
-    sourceAWorkbookId: sourceA.workbookId,
-    sourceBWorkbookId: sourceB.workbookId,
+    sourceAWorkbookId: session.sourceA.workbookId,
+    sourceBWorkbookId: session.sourceB.workbookId,
     location: {
       worksheetName: null,
       sheetIndex: null,
       row: null,
       column: null,
       a1: null,
-      rangeA1: null
+      rangeA1: null,
     },
-    changeType: 'modified',
+    changeType: session.conflicts.some((conflict) => conflict.finalState === 'unresolved') ? 'conflict' : 'modified',
     sourceA: {
-      label: files[0]?.fileName,
-      path: `/local/${files[0]?.fileName}`,
+      workbookId: session.sourceA.workbookId,
+      label: session.files[0]?.fileName,
+      path: `/local/${session.files[0]?.fileName}`,
       exists: true,
-      checksum: sourceA.checksum,
-      metadata: sourceA.metadata
+      checksum: session.sourceA.checksum,
+      metadata: session.sourceA.metadata,
     },
     sourceB: {
-      label: files[1]?.fileName,
-      path: `/local/${files[1]?.fileName}`,
+      workbookId: session.sourceB.workbookId,
+      label: session.files[1]?.fileName,
+      path: `/local/${session.files[1]?.fileName}`,
       exists: true,
-      checksum: sourceB.checksum,
-      metadata: sourceB.metadata
+      checksum: session.sourceB.checksum,
+      metadata: session.sourceB.metadata,
     },
-    userDecision: worksheetDiffs.every((worksheet) => worksheet.finalState !== 'pending') ? 'resolved' : 'unresolved',
-    finalState: worksheetDiffs.every((worksheet) => worksheet.finalState !== 'pending') ? 'merged' : 'pending',
+    userDecision: worksheetDiffs.every((worksheet) => worksheet.finalState !== 'unresolved') ? 'resolved' : 'unresolved',
+    finalState: worksheetDiffs.every((worksheet) => worksheet.finalState !== 'unresolved') ? 'merged' : 'unresolved',
     worksheetDiffs,
     conflicts: worksheetDiffs.flatMap((worksheet) => worksheet.conflicts),
-    summary: summarizeProgress(worksheetDiffs.flatMap((worksheet) => worksheet.conflicts))
-  };
-}
-
-function createCheckpoint(type, session, payload = {}) {
-  return {
-    id: `checkpoint:${type}:${session.sessionId}:${payload.occurredAt ?? session.updatedAt ?? session.createdAt}`,
-    type,
-    sessionId: session.sessionId,
-    occurredAt: payload.occurredAt ?? session.updatedAt ?? session.createdAt,
-    progress: summarizeProgress(session.conflicts),
-    ...payload
+    summary: summarizeProgress(worksheetDiffs.flatMap((worksheet) => worksheet.conflicts)),
   };
 }
 
@@ -235,47 +253,50 @@ function syncDerivedState(session) {
     grouped.set(key, current);
   }
 
+  const sourceAWorkbook = session.sourceAWorkbook ?? buildWorkbookFromFiles(session.sourceA, session.files[0], session.conflicts ?? []);
+  const sourceBWorkbook = session.sourceBWorkbook ?? buildWorkbookFromFiles(session.sourceB, session.files[1], session.conflicts ?? []);
   const worksheetDiffs = [...grouped.values()]
     .sort((left, right) => left.sheetIndex - right.sheetIndex)
-    .map((entry) => buildWorksheetDiff(entry.sheet, entry.sheetIndex, entry.conflicts));
-
-  const workbookDiff = buildWorkbookDiff(session, worksheetDiffs, session.files, session.sourceA, session.sourceB);
+    .map((entry) => buildWorksheetDiff(entry.sheet, entry.sheetIndex, entry.conflicts, sourceAWorkbook, sourceBWorkbook));
+  const workbookDiff = buildWorkbookDiff({ ...session, sourceAWorkbook, sourceBWorkbook }, worksheetDiffs);
   const progress = summarizeProgress(session.conflicts);
 
   return {
     ...session,
+    sourceAWorkbook,
+    sourceBWorkbook,
     worksheetDiffs,
+    conflicts: workbookDiff.conflicts,
     workbookDiff,
     progress,
-    status: progress.pending === 0 ? 'ready_to_export' : 'in_progress'
+    summary: {
+      ...(session.summary ?? {}),
+      pendingConflictCount: progress.pending,
+      totalConflictCount: progress.total,
+    },
+    officialFlow: buildOfficialFlowDescriptor(progress.pending === 0 ? 'validate_final_state' : 'resolve_conflicts'),
+    status: progress.pending === 0 ? 'ready_to_export' : 'in_progress',
   };
 }
 
-function updateConflictCollections(conflicts, targetIds, updater) {
-  const targetSet = new Set(targetIds);
-  return conflicts.map((conflict) => (targetSet.has(conflict.id) ? updater(conflict) : conflict));
-}
-
-function appendDecision(session, decision, checkpointType, checkpointPayload = {}) {
-  const nextSession = syncDerivedState({
-    ...session,
-    mergeDecisions: [...(session.mergeDecisions ?? []), decision],
-    updatedAt: decision.decidedAt,
-    lastCheckpointAt: decision.decidedAt
-  });
-
+function appendCheckpoint(session, type, occurredAt, payload = {}) {
   return {
-    ...nextSession,
+    ...session,
+    updatedAt: occurredAt,
+    lastCheckpointAt: occurredAt,
     checkpoints: [
-      ...(nextSession.checkpoints ?? []),
-      createCheckpoint(checkpointType, nextSession, {
-        decisionId: decision.id,
-        conflictId: checkpointPayload.conflictId,
-        worksheetName: checkpointPayload.worksheetName,
-        occurredAt: decision.decidedAt,
-        ...checkpointPayload
-      })
-    ]
+      ...(session.checkpoints ?? []),
+      createSessionCheckpoint({
+        sessionId: session.sessionId,
+        type,
+        step: payload.flowStep ?? (session.progress?.pending === 0 ? 'validate_final_state' : 'resolve_conflicts'),
+        occurredAt,
+        payload: {
+          progress: summarizeProgress(session.conflicts),
+          ...payload,
+        },
+      }),
+    ],
   };
 }
 
@@ -288,6 +309,8 @@ function createResolutionDecision(session, conflict, resolution, actor, occurred
     nodeType: 'MergeDecision',
     targetType: 'conflict',
     targetId: conflict.id,
+    cellRefs: conflict.cellRefs ?? [conflict.cellRef],
+    worksheetDiffIds: [conflict.worksheetDiffId],
     location: conflict.location,
     changeType: conflict.changeType,
     sourceA: conflict.sourceA,
@@ -305,13 +328,13 @@ function createResolutionDecision(session, conflict, resolution, actor, occurred
           value: finalValue.value,
           displayValue: finalValue.displayValue,
           formula: finalValue.formula ?? null,
-          type: finalValue.type
+          type: finalValue.type,
         },
         occurredAt,
         sessionId: session.sessionId,
-        actor
-      }
-    ]
+        actor,
+      },
+    ],
   };
 }
 
@@ -327,16 +350,16 @@ function updatePreview(session, conflict, resolution, occurredAt) {
         displayValue: value.displayValue,
         type: value.type,
         origin: resolution === 'left' ? 'source_a' : 'source_b',
-        location: conflict.location
-      }
+        location: conflict.location,
+      },
     },
-    updatedAt: occurredAt
+    updatedAt: occurredAt,
   };
 }
 
 export function summarizeProgress(conflicts = []) {
   const total = conflicts.length;
-  const resolved = conflicts.filter((conflict) => conflict.finalState !== 'pending').length;
+  const resolved = conflicts.filter((conflict) => conflict.finalState !== 'unresolved').length;
   const pending = total - resolved;
   const percent = total === 0 ? 100 : Math.round((resolved / total) * 100);
 
@@ -344,7 +367,7 @@ export function summarizeProgress(conflicts = []) {
     total,
     resolved,
     pending,
-    percent
+    percent,
   };
 }
 
@@ -354,7 +377,7 @@ export function buildInitialMergeSession(files, baseConflicts, now = new Date().
   const sessionId = `ms_${now.replace(/[:.]/g, '-').replace(/Z$/, 'Z')}_${slugify(files[0]?.fileName ?? 'workbook')}`;
   const conflicts = baseConflicts.map((conflict) => buildConflictNode(conflict, files));
 
-  const session = syncDerivedState({
+  const initial = syncDerivedState({
     sessionId,
     createdAt: now,
     updatedAt: now,
@@ -364,14 +387,14 @@ export function buildInitialMergeSession(files, baseConflicts, now = new Date().
       label: files[0]?.fileName,
       path: `/local/${files[0]?.fileName}`,
       checksum: sourceA.checksum,
-      metadata: sourceA.metadata
+      metadata: sourceA.metadata,
     },
     sourceB: {
       workbookId: sourceB.workbookId,
       label: files[1]?.fileName,
       path: `/local/${files[1]?.fileName}`,
       checksum: sourceB.checksum,
-      metadata: sourceB.metadata
+      metadata: sourceB.metadata,
     },
     files,
     conflicts,
@@ -379,22 +402,23 @@ export function buildInitialMergeSession(files, baseConflicts, now = new Date().
     checkpoints: [],
     resultPreview: {
       cells: {},
-      updatedAt: now
+      updatedAt: now,
     },
     sessionValidation: {
       status: 'resumable',
       checkedAt: now,
       expectedChecksums: {
         sourceA: sourceA.checksum,
-        sourceB: sourceB.checksum
-      }
-    }
+        sourceB: sourceB.checksum,
+      },
+    },
+    mvpLimits: buildVisibleMvpLimits(),
   });
 
-  return {
-    ...session,
-    checkpoints: [createCheckpoint('session_initialized', session, { occurredAt: now })]
-  };
+  return appendCheckpoint(initial, 'session_initialized', now, {
+    flowStep: 'persist_checkpoint',
+    expectedChecksums: initial.sessionValidation.expectedChecksums,
+  });
 }
 
 export function recordConflictResolution(session, { conflictId, resolution, actor, occurredAt = new Date().toISOString() }) {
@@ -403,7 +427,7 @@ export function recordConflictResolution(session, { conflictId, resolution, acto
     throw new Error(`Conflict ${conflictId} not found`);
   }
 
-  const updatedConflicts = updateConflictCollections(session.conflicts, [conflictId], (item) => ({
+  const updatedConflicts = (session.conflicts ?? []).map((item) => (item.id !== conflictId ? item : {
     ...item,
     status: 'resolved',
     resolution,
@@ -418,24 +442,27 @@ export function recordConflictResolution(session, { conflictId, resolution, acto
         finalValue: resolution === 'left' ? item.sourceA : item.sourceB,
         occurredAt,
         sessionId: session.sessionId,
-        actor
-      }
-    ]
+        actor,
+      },
+    ],
   }));
 
-  const updatedSession = syncDerivedState({
+  const synced = syncDerivedState({
     ...session,
     conflicts: updatedConflicts,
-    resultPreview: updatePreview(session, conflict, resolution, occurredAt)
+    resultPreview: updatePreview(session, conflict, resolution, occurredAt),
   });
+  const decision = createResolutionDecision(synced, synced.conflicts.find((item) => item.id === conflictId), resolution, actor, occurredAt);
 
-  const decision = createResolutionDecision(updatedSession, updatedSession.conflicts.find((item) => item.id === conflictId), resolution, actor, occurredAt);
-  return appendDecision(updatedSession, decision, 'conflict_resolved', { conflictId });
+  return appendCheckpoint({
+    ...synced,
+    mergeDecisions: [...(synced.mergeDecisions ?? []), decision],
+  }, 'conflict_resolved', occurredAt, { conflictId, worksheetName: conflict.location?.worksheetName });
 }
 
 export function applyBlockResolution(session, { worksheetName, resolution, actor, occurredAt = new Date().toISOString() }) {
   const targetIds = (session.conflicts ?? [])
-    .filter((conflict) => conflict.location?.worksheetName === worksheetName && conflict.finalState === 'pending')
+    .filter((conflict) => conflict.location?.worksheetName === worksheetName && conflict.finalState === 'unresolved')
     .map((conflict) => conflict.id);
 
   if (targetIds.length === 0) {
@@ -447,18 +474,11 @@ export function applyBlockResolution(session, { worksheetName, resolution, actor
     nextSession = recordConflictResolution(nextSession, { conflictId, resolution, actor, occurredAt });
   }
 
-  const checkpoint = createCheckpoint('block_applied', nextSession, {
+  return appendCheckpoint(nextSession, 'block_applied', occurredAt, {
     worksheetName,
     resolution,
-    occurredAt,
-    affectedConflictIds: targetIds
+    affectedConflictIds: targetIds,
   });
-
-  return {
-    ...nextSession,
-    checkpoints: [...(nextSession.checkpoints ?? []), checkpoint],
-    lastCheckpointAt: occurredAt
-  };
 }
 
 export function saveManualEditCheckpoint(session, { conflictId, rawValue, actor, occurredAt = new Date().toISOString() }) {
@@ -471,17 +491,18 @@ export function saveManualEditCheckpoint(session, { conflictId, rawValue, actor,
     conflict,
     rawValue,
     decidedBy: actor.userId,
-    decidedAt: occurredAt
+    decidedAt: occurredAt,
+    sessionId: session.sessionId,
   });
 
-  const updatedConflicts = updateConflictCollections(session.conflicts, [conflictId], (item) => ({
+  const updatedConflicts = (session.conflicts ?? []).map((item) => (item.id !== conflictId ? item : {
     ...item,
     status: 'resolved',
     resolution: {
       type: 'manual_edit',
       value: decision.manualEdit.value,
       displayValue: decision.manualEdit.displayValue,
-      valueType: decision.manualEdit.type
+      valueType: decision.manualEdit.type,
     },
     userDecision: 'manual_edit',
     finalState: 'merged',
@@ -489,22 +510,22 @@ export function saveManualEditCheckpoint(session, { conflictId, rawValue, actor,
       ...(item.history ?? []),
       {
         actionType: 'manual_edit_saved',
-        conflictId: item.id,
+        conflictId,
         decision: 'manual_edit',
         finalValue: {
           value: decision.manualEdit.value,
           displayValue: decision.manualEdit.displayValue,
           formula: decision.manualEdit.type === 'formula' ? decision.manualEdit.value : null,
-          type: decision.manualEdit.type
+          type: decision.manualEdit.type,
         },
         occurredAt,
         sessionId: session.sessionId,
-        actor
-      }
-    ]
+        actor,
+      },
+    ],
   }));
 
-  const updatedSession = syncDerivedState({
+  const synced = syncDerivedState({
     ...session,
     conflicts: updatedConflicts,
     resultPreview: {
@@ -516,34 +537,15 @@ export function saveManualEditCheckpoint(session, { conflictId, rawValue, actor,
           displayValue: decision.manualEdit.displayValue,
           type: decision.manualEdit.type,
           origin: 'manual_edit',
-          location: conflict.location
-        }
+          location: conflict.location,
+        },
       },
-      updatedAt: occurredAt
-    }
+      updatedAt: occurredAt,
+    },
+    mergeDecisions: [...(session.mergeDecisions ?? []), decision],
   });
 
-  const decisionWithHistory = {
-    ...decision,
-    history: [
-      {
-        actionType: 'manual_edit_saved',
-        conflictId,
-        decision: 'manual_edit',
-        finalValue: {
-          value: decision.manualEdit.value,
-          displayValue: decision.manualEdit.displayValue,
-          formula: decision.manualEdit.type === 'formula' ? decision.manualEdit.value : null,
-          type: decision.manualEdit.type
-        },
-        occurredAt,
-        sessionId: session.sessionId,
-        actor
-      }
-    ]
-  };
-
-  return appendDecision(updatedSession, decisionWithHistory, 'manual_edit_saved', { conflictId });
+  return appendCheckpoint(synced, 'manual_edit_saved', occurredAt, { conflictId });
 }
 
 function safeStorage() {
@@ -563,7 +565,7 @@ export function persistSession(session) {
   storage.setItem(SESSION_STORAGE_KEY, JSON.stringify({
     version: STORAGE_VERSION,
     savedAt: session.updatedAt,
-    session
+    session,
   }));
   return true;
 }
@@ -597,7 +599,7 @@ export function validatePersistedSession(persistedEnvelope, files, checkedAt = n
     return {
       status: 'missing',
       checkedAt,
-      reason: 'No se encontró ninguna sesión guardada.'
+      reason: 'No se encontró ninguna sesión guardada.',
     };
   }
 
@@ -612,7 +614,7 @@ export function validatePersistedSession(persistedEnvelope, files, checkedAt = n
       checkedAt,
       reason: 'Los metadatos del workbook no coinciden con la sesión guardada.',
       currentChecksums: { sourceA: currentA.checksum, sourceB: currentB.checksum },
-      storedChecksums: { sourceA: expectedA, sourceB: expectedB }
+      storedChecksums: { sourceA: expectedA, sourceB: expectedB },
     };
   }
 
@@ -621,7 +623,7 @@ export function validatePersistedSession(persistedEnvelope, files, checkedAt = n
     checkedAt,
     reason: null,
     currentChecksums: { sourceA: currentA.checksum, sourceB: currentB.checksum },
-    storedChecksums: { sourceA: expectedA, sourceB: expectedB }
+    storedChecksums: { sourceA: expectedA, sourceB: expectedB },
   };
 }
 
@@ -637,6 +639,6 @@ export function buildResumeDescriptor(persistedEnvelope, files, checkedAt = new 
     lastUpdatedAt: session?.updatedAt ?? persistedEnvelope?.savedAt ?? null,
     progress,
     canResume: validation.status === 'resumable',
-    session
+    session,
   };
 }

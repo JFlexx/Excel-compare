@@ -246,6 +246,16 @@ Los siguientes casos deben considerarse **no soportados** en esta versión y deb
 - formatos avanzados o estilos cuyo merge requiera semántica propia de Excel;
 - casos estructurales ambiguos, por ejemplo renombrados dudosos, desplazamientos complejos, celdas combinadas que rompan el mapeo o cambios simultáneos incompatibles.
 
+## Límites visibles del piloto reutilizados por UI y motor
+
+Los siguientes límites deben reutilizarse literalmente en la UI del add-in, en la persistencia de sesión y en los errores del motor para evitar interpretaciones distintas del alcance:
+
+- máximo estándar de 25 MB por archivo;
+- máximo estándar de 25 hojas por libro;
+- máximo estándar de 200.000 celdas relevantes por comparación;
+- una sola operación activa por usuario y sesión;
+- fuera de alcance: macros/VBA, tablas dinámicas complejas, objetos embebidos o flotantes, formatos avanzados y cambios estructurales ambiguos.
+
 ## 3. Reglas operativas del piloto
 
 ### 3.1 Qué se considera conflicto dentro del piloto

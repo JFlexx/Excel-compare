@@ -407,7 +407,8 @@ function apply_merge_decisions(leftWorkbookInput, rightWorkbookInput, diff, deci
   }
 
   for (const cellDiff of cellDiffs) {
-    const decision = coverage.byTarget.get(cellDiff.id) || coverage.byCell.get(cellDiff.id);
+    const relatedConflict = conflicts.find((conflict) => (conflict.cellRefs || []).includes(cellDiff.id));
+    const decision = coverage.byTarget.get(cellDiff.id) || coverage.byCell.get(cellDiff.id) || findDecisionForConflict(relatedConflict, coverage);
     if (isDecisionResolved(decision)) {
       applyCellDecision(resultWorkbook, leftWorkbook, rightWorkbook, cellDiff, decision, appliedChanges);
       if (decision.id && !appliedDecisionIds.includes(decision.id)) {
@@ -440,6 +441,17 @@ function apply_merge_decisions(leftWorkbookInput, rightWorkbookInput, diff, deci
     appliedChanges,
   };
 
+  const exportArtifact = {
+    type: 'xlsx-workbook',
+    workbookId: options.outputWorkbookId || `${leftWorkbook.workbookId}__merged__${rightWorkbook.workbookId}`,
+    worksheetCount: resultWorkbook.worksheets.length,
+    worksheets: resultWorkbook.worksheets.map((worksheet) => ({
+      name: worksheet.name,
+      index: worksheet.index,
+      cellCount: Object.keys(worksheet.cells || {}).length,
+    })),
+  };
+
   const mergeResult = {
     id: options.mergeResultId || `merge-result:${diff?.id || 'unknown'}:${appliedDecisionIds.length}`,
     nodeType: 'MergeResult',
@@ -467,7 +479,7 @@ function apply_merge_decisions(leftWorkbookInput, rightWorkbookInput, diff, deci
     finalState: pendingConflicts.length > 0 ? 'unresolved' : 'merged',
     appliedDecisionIds,
     output: {
-      workbookId: options.outputWorkbookId || `${leftWorkbook.workbookId}__merged__${rightWorkbook.workbookId}`,
+      workbookId: exportArtifact.workbookId,
       format: 'xlsx',
       resolvedConflictCount: summary.resolvedConflictCount,
       unresolvedConflictCount: summary.unresolvedConflictCount,
@@ -480,6 +492,7 @@ function apply_merge_decisions(leftWorkbookInput, rightWorkbookInput, diff, deci
     xlsxPayload: buildXlsxPayload(resultWorkbook),
     mergeResult,
     summary,
+    exportArtifact,
   };
 }
 

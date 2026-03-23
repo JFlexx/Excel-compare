@@ -1,27 +1,5 @@
-const OPERATIONAL_LIMITS = Object.freeze({
-  standard: {
-    maxFileSizeMb: 25,
-    maxSheets: 25,
-    maxUsedCells: 200000,
-    maxConcurrentOperationsPerUser: 1,
-    preparationSeconds: 5,
-    analysisSeconds: 30,
-    presentationSeconds: 5,
-    decisionSeconds: 2,
-  },
-  extended: {
-    maxFileSizeMb: 50,
-    degradation: 'Puede haber degradación controlada y se advertirá antes de continuar.',
-  },
-  platformScope: {
-    primary: 'Excel Desktop para Windows con Microsoft 365 Apps for enterprise.',
-    controlledAlternative: 'Excel 2021 LTSC aprobado por TI.',
-    exceptionalAlternative: 'Excel 2019 solo si TI lo mantiene y no faltan APIs necesarias.',
-    outOfScope: 'Excel para Mac sigue fuera de alcance inicial salvo validación expresa de TI.',
-  },
-});
+import { OPERATIONAL_LIMITS, PILOT_OUT_OF_SCOPE, buildVisibleMvpLimits } from './mvp-config.js';
 
-const ERROR_DEFINITIONS = Object.freeze({
 export const ERROR_DEFINITIONS = Object.freeze({
   CORRUPT_FILE: {
     code: 'CORRUPT_FILE',
@@ -49,7 +27,7 @@ export const ERROR_DEFINITIONS = Object.freeze({
     code: 'UNSUPPORTED_PILOT_FEATURES',
     userTitle: 'Este archivo queda fuera del piloto',
     userMessage:
-      'Detectamos macros, tablas dinámicas complejas, objetos embebidos o formatos avanzados. Este caso no está soportado en el piloto.',
+      `Detectamos características fuera del piloto, por ejemplo: ${PILOT_OUT_OF_SCOPE.slice(0, 4).join(' ')}`,
     userAction:
       'Elimina esas características o usa una versión simplificada del libro antes de volver a compararlo.',
     status: 'blocked',
@@ -70,8 +48,7 @@ export const ERROR_DEFINITIONS = Object.freeze({
   UNREADABLE_SHEET: {
     code: 'UNREADABLE_SHEET',
     userTitle: 'No pudimos leer una de las hojas',
-    userMessage:
-      'Encontramos una hoja que no se puede interpretar de forma confiable con este MVP.',
+    userMessage: 'Encontramos una hoja que no se puede interpretar de forma confiable con este MVP.',
     userAction:
       'Revisa si la hoja tiene protección, referencias rotas o estructuras especiales; después vuelve a comparar.',
     status: 'blocked',
@@ -138,8 +115,7 @@ export const ERROR_DEFINITIONS = Object.freeze({
     userTitle: 'No pudimos generar el archivo final',
     userMessage:
       'Ocurrió un problema al construir el resultado consolidado. Intenta de nuevo y, si el error continúa, vuelve a abrir la comparación.',
-    userAction:
-      'Reintenta la generación del archivo final o vuelve a cargar la comparación.',
+    userAction: 'Reintenta la generación del archivo final o vuelve a cargar la comparación.',
     status: 'blocked',
     severity: 'error',
     stage: 'export',
@@ -149,11 +125,11 @@ export const ERROR_DEFINITIONS = Object.freeze({
     userTitle: 'No pudimos descargar el archivo final',
     userMessage:
       'Generamos el resultado, pero no fue posible iniciar la descarga del archivo. Verifica los permisos de descarga del navegador o del add-in e inténtalo de nuevo.',
-    userAction:
-      'Comprueba que el navegador permita descargas y vuelve a intentar la exportación.',
+    userAction: 'Comprueba que el navegador permita descargas y vuelve a intentar la exportación.',
     status: 'blocked',
     severity: 'error',
     stage: 'export',
+  },
   INVALID_SESSION_STATE: {
     code: 'INVALID_SESSION_STATE',
     userTitle: 'La sesión requiere reiniciarse',
@@ -168,7 +144,10 @@ export const ERROR_DEFINITIONS = Object.freeze({
 });
 
 export function sanitizeForUser(value) {
-  if (!value) return undefined;
+  if (!value) {
+    return undefined;
+  }
+
   return String(value)
     .replace(/(?:[A-Z]:)?[^\s]+\.(?:js|ts|json|xml|zip|xlsx|xlsm)/gi, '[archivo interno]')
     .replace(/\b(?:TypeError|RangeError|SyntaxError|ReferenceError|OpenXml|ZipException|Stack trace)\b/gi, 'detalle interno')
@@ -202,8 +181,6 @@ export function buildError(code, context = {}, cause) {
     throw new Error(`Unsupported merge engine error code: ${code}`);
   }
 
-  const supportReference = buildSupportReference(context, definition.code);
-
   return {
     code: definition.code,
     userTitle: definition.userTitle,
@@ -214,9 +191,10 @@ export function buildError(code, context = {}, cause) {
     stage: definition.stage,
     recoverable: false,
     userHint: sanitizeForUser(context.userHint),
-    supportReference,
+    supportReference: buildSupportReference(context, definition.code),
     supportContext: pickSupportContext(context),
     operationalLimits: OPERATIONAL_LIMITS,
+    visibleMvpLimits: buildVisibleMvpLimits(),
     technicalDetails: {
       source: context.source || 'merge-engine',
       operation: context.operation,
@@ -229,10 +207,8 @@ export function buildError(code, context = {}, cause) {
   };
 }
 
-function inferErrorCode(input = {}) {
-  const probe = [input.rawCode, input.message, input.cause?.message, input.context?.invalidReason]
 export function inferErrorCode(input = {}) {
-  const probe = [input.rawCode, input.message, input.cause?.message]
+  const probe = [input.rawCode, input.message, input.cause?.message, input.context?.invalidReason]
     .filter(Boolean)
     .join(' ')
     .toLowerCase();
@@ -297,13 +273,3 @@ export function logEngineError(logger, engineError) {
   console.error(payload);
   return payload;
 }
-
-export {
-  ERROR_DEFINITIONS,
-  OPERATIONAL_LIMITS,
-  buildError,
-  inferErrorCode,
-  normalizeEngineError,
-  logEngineError,
-  sanitizeForUser,
-};
