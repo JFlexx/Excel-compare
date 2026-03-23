@@ -191,6 +191,7 @@ Representa el diff de una hoja concreta.
 | `finalState` | string | Estado final de la hoja. |
 | `cellDiffs` | array | Lista de `CellDiff`. |
 | `conflicts` | array | Conflictos en la hoja. |
+| `summary` | object | Conteos visibles por hoja, por ejemplo total y pendientes. |
 
 ### Ejemplo mínimo
 
@@ -217,9 +218,20 @@ Representa el diff de una hoja concreta.
     "exists": true
   },
   "userDecision": "unresolved",
-  "finalState": "pending"
+  "finalState": "pending",
+  "summary": {
+    "totalConflictCount": 21,
+    "pendingConflictCount": 3
+  }
 }
 ```
+
+### Requisitos funcionales derivados para la UI de conflictos
+
+- Cada `Conflict` debe incluir metadatos suficientes para filtrar por `worksheetName`, `changeType` y `finalState`.
+- Los conteos agregados deben exponer al menos `totalConflictCount` y `pendingConflictCount` tanto a nivel workbook como por hoja cuando sea posible.
+- Las acciones masivas deben poder describir su alcance en términos de `conflictIds`, rango afectado y hoja activa.
+- Cuando una acción afecte a múltiples conflictos/celdas, el payload de confirmación debe poder informar `affectedCellCount` o `affectedConflictCount`.
 
 ---
 

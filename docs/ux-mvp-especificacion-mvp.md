@@ -281,6 +281,24 @@ Cada conflicto debe mostrar:
 - Chip de estado.
 - Icono de tipo de cambio.
 - Marca de selección actual.
+- Contador resumido siempre visible con total y pendientes.
+
+### Filtros obligatorios en la lista
+La lista de conflictos debe soportar, como mínimo, estos filtros combinables:
+- `Hoja`
+- `Tipo de cambio`
+- `Estado`
+
+### Valores exactos de filtro por estado
+- `Todos`
+- `Pendientes`
+- `Resueltos`
+
+### Comportamiento de filtrado
+- Los filtros deben poder combinarse sin perder la selección activa si el conflicto sigue visible.
+- El filtro por hoja debe actualizar tanto la lista como el contador contextual de la hoja.
+- El filtro por tipo de cambio debe admitir selección única o múltiple según el componente elegido.
+- El filtro por estado pendiente/resuelto debe aplicarse también a acciones masivas para evitar operar sobre conflictos ocultos por error.
 
 ### Texto cuando no hay conflictos en la vista filtrada
 - `No hay conflictos para los filtros seleccionados.`
@@ -349,17 +367,27 @@ Hacer que el usuario identifique rápidamente qué necesita atención y qué ya 
 ### Filtros por tipo de cambio
 Botones/chips o menú multiselección con estas opciones exactas:
 - `Todos`
-- `Solo pendientes`
-- `Solo resueltos`
 - `Valor distinto`
 - `Filas agregadas`
 - `Filas eliminadas`
 - `Columnas agregadas`
 - `Columnas eliminadas`
 
+### Filtros por hoja
+- Dropdown con opción `Todas las hojas` seguida del listado de hojas con conflictos.
+- Cada opción puede mostrar un contador contextual, por ejemplo `Summary (3 pendientes)`.
+
+### Filtros por estado
+Control independiente del tipo de cambio con estas opciones exactas:
+- `Todos`
+- `Pendientes`
+- `Resueltos`
+
 ### Comportamiento de filtros
 - Mantener el contador total de pendientes visible aunque haya filtros activos.
+- Mantener visible el contador total de conflictos.
 - Mostrar cuántos resultados devuelve el filtro actual.
+- Mostrar cuántos conflictos pendientes quedan dentro de la vista actual filtrada.
 - Si un filtro deja vacía la lista, mostrar estado vacío claro.
 
 ---
@@ -392,10 +420,12 @@ Botones/chips o menú multiselección con estas opciones exactas:
 ### Contador persistente
 **Formato recomendado**
 - `Pendientes: 12`
+- `Conflictos: 21`
 
 **Variantes útiles**
 - `Pendientes en esta hoja: 3`
 - `Resueltos: 9 de 21`
+- `Mostrando: 4 de 21`
 
 El contador principal siempre debe estar en la parte superior y visible sin scroll.
 
@@ -475,11 +505,52 @@ Permite repetir una misma decisión en varios conflictos seleccionados del mismo
 - `Aplicar izquierda a la selección`
 - `Aplicar derecha a la selección`
 - `Marcar selección como saltada`
+- `Marcar selección como resuelta`
+
+### 12.6 Acciones masivas controladas
+Además de la selección manual, el MVP debe ofrecer acciones masivas predefinidas para casos simples:
+
+#### Aceptar izquierda para cambios no conflictivos
+- Acción disponible solo cuando el subconjunto seleccionado o filtrado contiene cambios auto-resolubles o no conflictivos.
+- Etiqueta sugerida: `Aceptar izquierda en no conflictivos`
+- Debe indicar cuántas celdas se verán afectadas antes de ejecutar.
+
+#### Aceptar derecha para una hoja completa
+- Acción disponible desde el contexto de hoja.
+- Etiqueta sugerida: `Aceptar derecha en la hoja`
+- Debe limitarse a la hoja actualmente visible o seleccionada en el filtro.
+
+#### Marcar bloque como resuelto tras revisión
+- Acción disponible para rangos continuos o bloques homogéneos revisados por el usuario.
+- Etiqueta sugerida: `Marcar bloque como resuelto`
+- Debe exigir que el bloque esté claramente delimitado y resaltado antes de confirmar.
+
+### Confirmación obligatoria para acciones masivas
+Cuando una acción afecte a múltiples celdas, filas, columnas o conflictos, debe mostrarse una confirmación explícita.
+
+**Regla**
+- Pedir confirmación siempre que la acción afecte a más de 1 celda/conflicto.
+
+**Contenido mínimo de la confirmación**
+- Título con la acción: por ejemplo `Confirmar acción masiva`
+- Resumen de alcance: hoja, bloque o filtro aplicado.
+- Número de conflictos o celdas afectadas.
+- Advertencia de reversibilidad si existe soporte de deshacer.
+
+**Ejemplos de mensajes**
+- `Vas a aceptar la versión izquierda en 18 cambios no conflictivos.`
+- `Vas a aceptar la versión derecha en toda la hoja "Summary" (42 celdas).`
+- `Vas a marcar 12 celdas del bloque B4:D7 como resueltas tras revisión.`
+
+**Botones**
+- `Confirmar`
+- `Cancelar`
 
 **Mensajes exactos**
 - `Selecciona al menos un conflicto para aplicar esta acción.`
 - `La acción se aplicó a 5 conflictos.`
 - `Algunos conflictos no eran compatibles y no se modificaron.`
+- `Debes confirmar la acción masiva antes de continuar.`
 
 ### Orden visual recomendado de acciones
 1. `Aceptar izquierda`
@@ -507,6 +578,11 @@ Motivo: priorizar acciones directas y de menor fricción antes de acciones avanz
 - `No pudimos exportar el archivo. Intenta de nuevo.`
 
 ### Confirmaciones recomendadas
+Al ejecutar una acción masiva sobre múltiples celdas o conflictos:
+- Título: `Confirmar acción masiva`
+- Mensaje: `Esta acción modificará múltiples celdas. Revisa el alcance antes de continuar.`
+- Botones: `Confirmar` / `Cancelar`
+
 Al intentar salir con conflictos sin resolver:
 - Título: `Aún tienes conflictos pendientes`
 - Mensaje: `Si sales ahora, el resultado final puede quedar incompleto. ¿Quieres continuar?`
@@ -620,6 +696,7 @@ Campos mínimos:
 - Si no quedan pendientes en la hoja, mostrar resumen y sugerir cambiar de hoja.
 - Las acciones deben reflejarse en tiempo real en contador, colores y lista.
 - Evitar pérdida silenciosa de datos: toda acción masiva debe mostrar resumen del resultado.
+- Toda acción masiva con más de un elemento afectado debe requerir confirmación explícita antes de aplicarse.
 
 ---
 
@@ -630,7 +707,7 @@ Campos mínimos:
 [Archivo base] + [Archivo comparado] -> [Comparar archivos]
 
 (2) WORKSPACE
-[Hoja] [Filtros] [Pendientes]
+[Hoja] [Filtros] [Conflictos: 21] [Pendientes: 12]
 [Panel izquierdo] [Lista de conflictos] [Panel derecho]
 
 (3) RESOLUCIÓN
@@ -645,12 +722,15 @@ Campos mínimos:
 ## 18. Criterios de aceptación UX para el MVP
 
 1. Un usuario no técnico entiende en menos de 30 segundos la diferencia entre `Archivo base` y `Archivo comparado`.
-2. El sistema muestra siempre un contador visible de conflictos pendientes.
-3. Cada conflicto puede resolverse con una de las cinco acciones pedidas.
-4. El usuario puede navegar por hoja y por conflicto sin perder contexto visual.
-5. Los estados `Pendiente`, `Resuelto`, `Saltado` y `Editado manualmente` son distinguibles por color, icono y etiqueta.
-6. El flujo de exportación deja claro cuándo el archivo está listo para salir.
-7. Todos los botones y mensajes críticos usan lenguaje simple y consistente.
+2. El sistema muestra siempre un contador visible en la cabecera de trabajo, sin requerir scroll.
+3. El sistema muestra siempre un contador visible de conflictos totales y pendientes.
+4. La lista de conflictos permite filtrar por hoja, tipo de cambio y estado pendiente/resuelto.
+5. Cada conflicto puede resolverse con una de las acciones pedidas y existen acciones masivas controladas para casos simples.
+6. Toda acción masiva que afecte a múltiples celdas pide confirmación explícita antes de ejecutarse.
+7. El usuario puede navegar por hoja y por conflicto sin perder contexto visual.
+8. Los estados `Pendiente`, `Resuelto`, `Saltado` y `Editado manualmente` son distinguibles por color, icono y etiqueta.
+9. El flujo de exportación deja claro cuándo el archivo está listo para salir.
+10. Todos los botones y mensajes críticos usan lenguaje simple y consistente.
 
 ---
 
@@ -673,6 +753,10 @@ Campos mínimos:
 - `Cancelar`
 - `Saltar`
 - `Aplicar a selección`
+- `Aceptar izquierda en no conflictivos`
+- `Aceptar derecha en la hoja`
+- `Marcar bloque como resuelto`
+- `Confirmar`
 - `Exportar`
 - `Abrir carpeta`
 - `Intentar de nuevo`
@@ -689,6 +773,7 @@ Campos mínimos:
 - `La carga tardó más de lo esperado. Intenta de nuevo.`
 - `No pudimos guardar el valor ingresado.`
 - `Selecciona al menos un conflicto para aplicar esta acción.`
+- `Debes confirmar la acción masiva antes de continuar.`
 - `Debes resolver todos los conflictos antes de exportar.`
 - `Debes indicar un nombre para el archivo final.`
 - `Ya existe un archivo con ese nombre.`
@@ -702,8 +787,9 @@ Campos mínimos:
 - `Se aplicó la versión del archivo comparado.`
 - `Conflicto saltado. Puedes resolverlo más tarde.`
 - `La acción se aplicó a 5 conflictos.`
+- `Conflictos: 21`
+- `Pendientes: 12`
 - `Progreso guardado.`
 - `Resultado exportado correctamente.`
 - `No hay conflictos para los filtros seleccionados.`
 - `No quedan conflictos pendientes en esta hoja.`
-

@@ -115,16 +115,27 @@ Estas acciones deben existir al menos para:
   - aceptar derecha para todas las celdas cambiadas en una fila;
   - aceptar izquierda para una hoja completa agregada o eliminada;
   - aceptar una decisión sobre un bloque continuo de celdas.
+- También deben contemplarse acciones masivas controladas para casos simples:
+  - aceptar izquierda para cambios no conflictivos;
+  - aceptar derecha para una hoja completa;
+  - marcar un bloque como resuelto tras revisión.
+
+### 9. Confirmación de acciones masivas
+- Toda acción que afecte a múltiples celdas o conflictos debe pedir confirmación explícita.
+- La confirmación debe informar hoja, alcance y número de celdas/conflictos afectados.
+- Si existe deshacer, debe comunicarse claramente como mecanismo de reversión posterior.
 
 ## Casos de uso principales del MVP
 
-### 9. Casos de uso esperados
+### 10. Casos de uso esperados
 1. **Comparar dos libros y listar diferencias relevantes**.
 2. **Resolver un conflicto celda** eligiendo aceptar izquierda/derecha.
 3. **Aplicar una resolución masiva** sobre un bloque simple de cambios homogéneos.
 4. **Editar el resultado final** cuando ninguna de las dos versiones sea suficiente.
 5. **Revisar cambios auto-resueltos** antes de exportar o guardar el resultado.
 6. **Generar un archivo final** con las decisiones aplicadas.
+7. **Filtrar la lista de conflictos** por hoja, tipo de cambio y estado pendiente/resuelto.
+8. **Consultar contadores persistentes** de conflictos totales y pendientes mientras se revisa la sesión.
 
 ## No-objetivos del MVP
 Los siguientes puntos quedan explícitamente fuera del MVP, salvo que negocio los priorice después:
