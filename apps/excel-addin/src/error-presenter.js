@@ -1,7 +1,7 @@
 import { normalizeEngineError } from '../../../services/merge-engine/src/error-catalog.js';
 import { buildVisibleMvpLimits } from '../../../services/merge-engine/src/mvp-config.js';
 
-export const VIEW_STATE_BY_STATUS = Object.freeze({
+const VIEW_STATE_BY_STATUS = Object.freeze({
   blocked: {
     tone: 'critical',
     canRetry: true,
@@ -106,11 +106,10 @@ export function buildExportGuard(summary = {}) {
     return createUserErrorView({
       code: 'INVALID_SESSION_STATE',
       context: {
-        operation: 'export-result',
         sessionId: summary.sessionId,
+        operation: 'export-result',
         sessionStatus: summary.sessionStatus || 'invalid',
         invalidReason: summary.invalidReason || 'session invalid during export guard',
-        diagnostics: summary,
       },
     });
   }
@@ -122,18 +121,17 @@ export function buildExportGuard(summary = {}) {
         sessionId: summary.sessionId,
         operation: 'export-result',
         pendingConflictCount: summary.criticalConflictsPending,
-        diagnostics: summary,
       },
     });
   }
 
-  if (summary.totalPending > 0) {
+  if ((summary.totalPending ?? 0) > 0) {
     return createUserErrorView({
       code: 'PENDING_CONFLICTS_PENDING_EXPORT',
       context: {
+        sessionId: summary.sessionId,
         operation: 'export-result',
         pendingConflictCount: summary.totalPending,
-        diagnostics: summary,
       },
     });
   }
@@ -157,10 +155,9 @@ export function buildExportGuard(summary = {}) {
 
 export function recordAddinError(logger, viewModel) {
   const payload = {
-    event: 'excel_addin_user_error_presented',
+    ...viewModel.telemetry,
     tone: viewModel.tone,
     title: viewModel.title,
-    telemetry: viewModel.telemetry,
   };
 
   if (logger && typeof logger.error === 'function') {

@@ -1,4 +1,4 @@
-# apps/excel-addin
+# Excel Add-in local
 
 Implementación del task pane del MVP para ejecutar un único flujo oficial: seleccionar dos workbooks, normalizarlos, crear la merge session, persistir checkpoints, resolver conflictos, validar el estado final y exportar el resultado.
 

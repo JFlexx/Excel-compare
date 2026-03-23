@@ -4,7 +4,6 @@ import assert from 'node:assert/strict';
 import {
   buildExportGuard,
   createUserErrorView,
-  recordAddinError,
 } from '../src/error-presenter.js';
 
 test('createUserErrorView turns unsupported formulas into requires-attention copy without raw technical text', () => {

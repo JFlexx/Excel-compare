@@ -8,13 +8,15 @@ import {
 import { syncDerivedHistoryArtifacts } from './history-panel.js';
 
 function findConflict(session, conflictId) {
-  return (session.conflicts ?? []).find(
-    (conflict) => conflict.id === conflictId || conflict.cellRef === conflictId || conflict.cellRefs?.includes(conflictId),
+  return (session?.conflicts ?? []).find(
+    (conflict) =>
+      conflict.id === conflictId ||
+      conflict.cellRef === conflictId ||
+      (Array.isArray(conflict.cellRefs) && conflict.cellRefs.includes(conflictId)),
   );
 }
 
 function assertSessionConsistency(session, conflictId) {
-  const conflict = findConflict(session, conflictId);
   const problems = [];
 
   if (!session || typeof session !== 'object') {
@@ -29,6 +31,8 @@ function assertSessionConsistency(session, conflictId) {
   if (!session?.resultPreview || typeof session.resultPreview !== 'object') {
     problems.push('resultPreview missing');
   }
+
+  const conflict = problems.length === 0 ? findConflict(session, conflictId) : null;
   if (!conflict) {
     problems.push(`conflict ${conflictId} not found`);
   }
@@ -38,9 +42,9 @@ function assertSessionConsistency(session, conflictId) {
     error.code = 'INVALID_SESSION_STATE';
     error.details = {
       sessionId: session?.sessionId,
-      invalidReason: problems.join(', '),
       conflictId,
       sessionStatus: session?.status,
+      invalidReason: problems.join(', '),
     };
     throw error;
   }
@@ -59,19 +63,25 @@ function buildBlockMetadata(conflict) {
 
 function previewForCurrentConflict(session, conflict, draftValue) {
   const validation = draftValue === ''
-    ? { valid: true, expectedType: conflict.sourceA?.type ?? conflict.sourceB?.type ?? 'string' }
+    ? { valid: true, expectedType: inferExpectedType(conflict), error: null }
     : validateManualEdit(conflict, draftValue);
 
-  const preview = validation.valid && draftValue !== ''
-    ? {
-        displayValue: validation.displayValue,
+  if (draftValue !== '' && validation.valid) {
+    return {
+      validation,
+      preview: {
         value: validation.parsedValue,
+        displayValue: validation.displayValue,
         type: validation.valueType,
         origin: 'manual_edit',
-      }
-    : session.resultPreview?.cells?.[conflict.cellRef ?? conflict.cellRefs?.[0]] ?? null;
+      },
+    };
+  }
 
-  return { validation, preview };
+  return {
+    validation,
+    preview: session?.resultPreview?.cells?.[getPrimaryCellRef(conflict)] ?? null,
+  };
 }
 
 export function buildConflictDetailPanelModel(session, conflictId, draftValue = '') {
@@ -80,7 +90,7 @@ export function buildConflictDetailPanelModel(session, conflictId, draftValue = 
   const block = buildBlockMetadata(conflict);
 
   return {
-    conflictId,
+    conflictId: conflict.id,
     title: `Conflicto en ${conflict.location?.worksheetName ?? 'Hoja'} ${conflict.location?.a1 ?? ''}`.trim(),
     editableField: {
       label: 'Valor final',
@@ -112,6 +122,7 @@ export function buildConflictDetailPanelModel(session, conflictId, draftValue = 
         decisionType: 'accept_left',
         scopeType: 'block',
         targetId: block.targetId,
+        cellRefs: block.cellRefs,
       },
       acceptRightBlock: {
         type: 'APPLY_MERGE_DECISION',
@@ -124,17 +135,13 @@ export function buildConflictDetailPanelModel(session, conflictId, draftValue = 
     preview: preview
       ? {
           title: 'Vista previa del resultado final',
-          cell: conflict.location?.a1,
+          cell: conflict.location?.a1 ?? null,
           value: preview.displayValue,
           type: preview.type,
           origin: preview.origin,
         }
       : null,
-    resolutionSummary: {
-      pending: session.summary?.unresolvedConflictCount ?? (session.pendingConflicts?.length ?? 0),
-      resolved: session.summary?.resolvedConflictCount ?? 0,
-      total: session.summary?.totalConflicts ?? (session.conflicts?.length ?? 0),
-    },
+    resolutionSummary: buildSummary(session.conflicts ?? []),
   };
 }
 
@@ -143,7 +150,7 @@ export function createDecisionActionFromPanel(session, {
   decisionType,
   rawValue,
   decidedBy,
-  decidedAt,
+  decidedAt = new Date().toISOString(),
   scopeType,
   targetId,
   cellRefs,
@@ -188,7 +195,7 @@ export function saveManualEditFromPanel(session, { conflictId, rawValue, decided
 }
 
 export function reduceSessionState(session, action) {
-  if (action.type !== 'APPLY_MERGE_DECISION') {
+  if (action?.type !== 'APPLY_MERGE_DECISION') {
     return session;
   }
 
