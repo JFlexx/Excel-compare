@@ -1,18 +1,3 @@
-'use strict';
-
-import { apply_merge_decisions, buildXlsxPayload } from './apply-merge-decisions.js';
-export { compare_workbooks, compare_worksheets, compare_cells } from './diff.js';
-export {
-  getWorksheetDimensions,
-  iterateWorksheets,
-  loadAndNormalizeWorkbook,
-  loadWorkbook,
-  normalizeExcelCellToCanonical,
-  normalizeWorkbook,
-  normalizeWorksheet,
-  shouldIgnoreCell,
-} from './xlsx-normalizer.js';
-
 const SUPPORTED_TYPES = new Set(['string', 'number', 'boolean', 'formula']);
 
 function inferCellType(conflict) {
@@ -24,15 +9,7 @@ function inferCellType(conflict) {
 function coerceManualEditValue(rawValue, expectedType) {
   if (expectedType === 'number') {
     const trimmed = String(rawValue).trim();
-    if (trimmed.length === 0) {
-      return {
-        ok: false,
-        error: 'Introduce un número válido para resolver este conflicto.',
-      };
-    }
-
-    const numericValue = Number(trimmed);
-    if (!Number.isFinite(numericValue)) {
+    if (trimmed.length === 0 || !Number.isFinite(Number(trimmed))) {
       return {
         ok: false,
         error: 'Introduce un número válido para resolver este conflicto.',
@@ -42,7 +19,7 @@ function coerceManualEditValue(rawValue, expectedType) {
     return {
       ok: true,
       valueType: 'number',
-      parsedValue: numericValue,
+      parsedValue: Number(trimmed),
       displayValue: trimmed,
     };
   }
@@ -129,14 +106,6 @@ export function createManualEditDecision({ conflict, rawValue, decidedBy, decide
   }
 
   const targetId = conflict.cellRef ?? conflict.cellRefs?.[0] ?? conflict.id;
-  const preview = {
-    targetId,
-    location: conflict.location,
-    value: validation.parsedValue,
-    displayValue: validation.displayValue,
-    type: validation.valueType,
-  };
-
   return {
     id: `decision:${targetId}:manual_edit`,
     nodeType: 'MergeDecision',
@@ -156,85 +125,12 @@ export function createManualEditDecision({ conflict, rawValue, decidedBy, decide
       displayValue: validation.displayValue,
       type: validation.valueType,
     },
-    preview,
-  };
-}
-
-function updateCollection(items, matcher, updater) {
-  return items.map((item) => (matcher(item) ? updater(item) : item));
-}
-
-export function applyDecisionToSession(session, decision) {
-  const targetId = decision.targetId;
-  const updatedConflicts = updateCollection(
-    session.conflicts ?? [],
-    (conflict) => conflict.id === targetId || conflict.cellRef === targetId || conflict.cellRefs?.includes(targetId),
-    (conflict) => ({
-      ...conflict,
-      userDecision: decision.userDecision,
-      finalState: decision.finalState,
-      resolution: {
-        type: 'manual_edit',
-        value: decision.manualEdit.value,
-        displayValue: decision.manualEdit.displayValue,
-        valueType: decision.manualEdit.type,
-      },
-    }),
-  );
-
-  const updatedSheets = updateCollection(session.worksheetDiffs ?? [], () => true, (sheet) => ({
-    ...sheet,
-    cellDiffs: updateCollection(
-      sheet.cellDiffs ?? [],
-      (cellDiff) => cellDiff.id === targetId,
-      (cellDiff) => ({
-        ...cellDiff,
-        userDecision: decision.userDecision,
-        finalState: decision.finalState,
-        finalValue: {
-          value: decision.manualEdit.value,
-          displayValue: decision.manualEdit.displayValue,
-          type: decision.manualEdit.type,
-          origin: 'manual_edit',
-        },
-      }),
-    ),
-  }));
-
-  const mergedCellPreviews = {
-    ...(session.resultPreview?.cells ?? {}),
-    [targetId]: {
-      value: decision.manualEdit.value,
-      displayValue: decision.manualEdit.displayValue,
-      type: decision.manualEdit.type,
-      origin: 'manual_edit',
-      location: decision.location,
+    preview: {
+      targetId,
+      location: conflict.location,
+      value: validation.parsedValue,
+      displayValue: validation.displayValue,
+      type: validation.valueType,
     },
   };
-
-  return {
-    ...session,
-    mergeDecisions: [...(session.mergeDecisions ?? []), decision],
-    conflicts: updatedConflicts,
-    worksheetDiffs: updatedSheets,
-    resultPreview: {
-      ...(session.resultPreview ?? {}),
-      cells: mergedCellPreviews,
-      updatedAt: decision.decidedAt,
-    },
-    status: 'Ready',
-  };
 }
-
-export { apply_merge_decisions, buildXlsxPayload } from './apply-merge-decisions.js';
-export {
-  apply_merge_decisions,
-  buildXlsxPayload,
-} from './apply-merge-decisions.js';
-export {
-  compare_workbooks,
-  compare_worksheets,
-  compare_cells,
-} from './diff.js';
-
-export { apply_merge_decisions, buildXlsxPayload };

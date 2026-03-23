@@ -5,6 +5,7 @@ import { buildConflictDetailPanelModel, reduceSessionState, saveManualEditFromPa
 function buildNumberSession() {
   return {
     sessionId: 'session-1',
+    status: 'ready',
     conflicts: [
       {
         id: 'conflict:sheet1:B4',
@@ -14,11 +15,11 @@ function buildNumberSession() {
         sourceA: { value: 1200, displayValue: '1200', type: 'number', exists: true },
         sourceB: { value: 1350, displayValue: '1350', type: 'number', exists: true },
         userDecision: 'unresolved',
-        finalState: 'pending'
-      }
+        finalState: 'pending',
+      },
     ],
     mergeDecisions: [],
-    resultPreview: { cells: {} }
+    resultPreview: { cells: {} },
   };
 }
 
@@ -74,7 +75,7 @@ test('saving manual edit updates session preview state with manual_edit origin',
     conflictId: 'conflict:sheet1:B4',
     rawValue: '1550',
     decidedBy: 'user:ana',
-    decidedAt: '2026-03-23T12:15:00Z'
+    decidedAt: '2026-03-23T12:15:00Z',
   });
 
   const updated = reduceSessionState(session, action);
@@ -82,4 +83,38 @@ test('saving manual edit updates session preview state with manual_edit origin',
   assert.equal(updated.resultPreview.cells['cell:sheet1:B4'].origin, 'manual_edit');
   assert.equal(updated.resultPreview.cells['cell:sheet1:B4'].displayValue, '1550');
   assert.equal(updated.mergeDecisions[0].manualEdit.type, 'number');
+  assert.equal(updated.status, 'attention_required');
+});
+
+test('invalid session state is rejected before mutating the session', () => {
+  const brokenSession = {
+    sessionId: 'session-bad',
+    status: 'ready',
+    conflicts: [],
+    mergeDecisions: [],
+  };
+
+  assert.throws(
+    () => buildConflictDetailPanelModel(brokenSession, 'conflict:sheet1:B4', '100'),
+    (error) => error.code === 'INVALID_SESSION_STATE' && /resultPreview missing/i.test(error.message),
+  );
+  assert.deepEqual(brokenSession, {
+    sessionId: 'session-bad',
+    status: 'ready',
+    conflicts: [],
+    mergeDecisions: [],
+  });
+});
+
+test('reduceSessionState rejects malformed actions instead of leaving a silent corruption', () => {
+  const session = buildSession();
+
+  assert.throws(
+    () => reduceSessionState(session, { type: 'SAVE_MANUAL_EDIT', payload: { targetId: 'cell:sheet1:B4' } }),
+    (error) => error.code === 'INVALID_SESSION_STATE' && /payload incomplete/i.test(error.message),
+  );
+  assert.equal(session.mergeDecisions.length, 0);
+  assert.deepEqual(session.resultPreview.cells, {});
+  assert.equal(updated.mergeDecisions[0].history[0].conflictId, 'conflict:sheet1:B4');
+  assert.equal(updated.supportExport.rows[0].affectedLocation, 'Summary!B4');
 });
