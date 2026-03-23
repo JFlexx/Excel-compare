@@ -14,6 +14,7 @@
           <p class="eyebrow">Excel Compare · Uso interno</p>
           <h1>Sesión inicial de comparación</h1>
           <p class="intro">
+            Revisa los libros comparados, guarda checkpoints de la sesión y decide si quieres reanudar o reiniciar el merge.
             Selecciona el workbook base y el workbook comparado para normalizarlos, ejecutar el diff del MVP y guardar la sesión inicial.
           </p>
         </div>
@@ -30,9 +31,39 @@
             <span class="summary-label">Cambios auto-resueltos</span>
             <strong id="summary-auto-resolved">0</strong>
           </div>
+          <div>
+            <span class="summary-label">Progreso</span>
+            <strong id="progress-percent">0%</strong>
+          </div>
         </div>
       </header>
 
+      <section class="panel session-resume-panel" aria-labelledby="session-resume-title">
+        <div class="panel-heading">
+          <div>
+            <h2 id="session-resume-title">Reanudar sesión</h2>
+            <p class="session-copy" id="session-status-text">
+              Revisa si la sesión guardada coincide con los workbooks actuales antes de reanudar.
+            </p>
+          </div>
+          <span class="chip chip-neutral" id="session-status-chip">Sin sesión</span>
+        </div>
+
+        <div class="session-meta-grid">
+          <div>
+            <span class="meta-label">Última actualización</span>
+            <strong id="session-last-updated">—</strong>
+          </div>
+          <div>
+            <span class="meta-label">Progreso guardado</span>
+            <strong id="session-progress">—</strong>
+          </div>
+        </div>
+
+        <div class="session-actions">
+          <button id="resume-action" class="action-button primary" type="button">Reanudar sesión</button>
+          <button id="discard-resume" class="action-button secondary" type="button">Descartar y empezar de nuevo</button>
+        </div>
       <section class="host-banner" id="host-banner" aria-live="polite">
         <div>
           <div class="host-banner-header">
@@ -125,7 +156,7 @@
                 <strong id="detail-cell">—</strong>
               </div>
               <div>
-                <span class="meta-label">Tipo</span>
+                <span class="meta-label">Descripción</span>
                 <strong id="detail-type">—</strong>
               </div>
             </div>
@@ -137,6 +168,8 @@
                   <span class="value-caption" id="left-book-name">—</span>
                 </div>
                 <pre id="left-value" class="value-box">—</pre>
+                <button id="accept-left" class="action-button secondary" type="button">Aceptar izquierda</button>
+                <button id="apply-left-sheet" class="action-button tertiary" type="button">Aplicar izquierda en hoja</button>
               </article>
 
               <article class="value-card">
@@ -145,7 +178,23 @@
                   <span class="value-caption" id="right-book-name">—</span>
                 </div>
                 <pre id="right-value" class="value-box">—</pre>
+                <button id="accept-right" class="action-button primary" type="button">Aceptar derecha</button>
+                <button id="apply-right-sheet" class="action-button tertiary" type="button">Aplicar derecha en hoja</button>
               </article>
+            </div>
+
+            <div class="manual-edit-card">
+              <div class="panel-heading compact">
+                <h3>Edición manual</h3>
+                <span class="chip chip-neutral">Checkpoint</span>
+              </div>
+              <label class="toolbar-label" for="manual-edit-input">Valor final</label>
+              <input id="manual-edit-input" class="manual-edit-input" type="text" placeholder="Escribe el valor final manual" />
+              <p class="manual-edit-hint" id="manual-edit-hint">Tipo esperado: string.</p>
+              <div class="manual-edit-actions">
+                <button id="manual-edit-save" class="action-button primary" type="button">Guardar edición manual</button>
+                <span class="manual-edit-preview" id="manual-edit-preview">Sin vista previa manual para este conflicto.</span>
+              </div>
             </div>
 
             <div class="resolution-summary">
