@@ -113,6 +113,21 @@ Todos los nodos pueden exponer estos campos, aunque en algunos casos se rellenen
 
 - `userDecision`: `take_a`, `take_b`, `take_both`, `manual_edit`, `skip`, `unresolved`.
 - `finalState`: `pending`, `accepted_a`, `accepted_b`, `merged`, `discarded`, `unresolved`.
+- `manualEdit`: objeto opcional con `rawValue`, `value`, `displayValue` y `type` cuando la decisión final sea `manual_edit`.
+- `resultPreview`: instantánea serializable del valor final por celda para que UI y motor compartan la misma vista previa del resultado.
+
+### Historial mínimo enlazado a la decisión
+
+Para soporte interno y revisión posterior, cada `MergeDecision` debe incluir un historial corto de acciones (`history`) en vez de persistir eventos huérfanos en otra colección. Cada entrada representa una acción observable sobre el conflicto o nodo afectado y debe conservar, como mínimo:
+
+- `conflictId`: conflicto afectado o `targetId` si la decisión apunta directo a una celda/hoja.
+- `decision`: decisión tomada en ese paso.
+- `finalValue`: valor final seleccionado o editado. Puede ser escalar o un objeto con `value`, `displayValue`, `formula` y `type`.
+- `occurredAt`: fecha y hora en ISO-8601.
+- `sessionId`: identificador de sesión.
+- `actor`: objeto opcional con `userId`, `displayName` y `origin` cuando el entorno ya permite conocer al usuario.
+
+Este historial se considera parte del contexto de `MergeDecision`: sirve para reconstruir cómo se resolvió un conflicto, generar resúmenes técnicos y emitir exportaciones sencillas sin perder la relación entre conflicto, decisión y resultado.
 
 ---
 
@@ -370,6 +385,7 @@ Registra explícitamente la decisión tomada por el usuario o por una regla auto
 | `decidedBy` | string | Usuario o proceso. |
 | `decidedAt` | string | Fecha ISO-8601. |
 | `note` | string | Comentario opcional. |
+| `history` | array | Historial mínimo de acciones enlazado a esta decisión. |
 
 ### Ejemplo mínimo
 
@@ -400,8 +416,81 @@ Registra explícitamente la decisión tomada por el usuario o por una regla auto
   "finalState": "merged",
   "decidedBy": "user:ana",
   "decidedAt": "2026-03-23T11:02:00Z",
-  "note": "Keep B values but preserve A total in B6."
+  "note": "Keep B values but preserve A total in B6.",
+  "history": [
+    {
+      "actionType": "selected_source",
+      "conflictId": "conflict:range:summary:0:B4:B6",
+      "decision": "take_b",
+      "finalValue": {
+        "value": "Quarterly plan v2",
+        "displayValue": "Quarterly plan v2",
+        "formula": null,
+        "type": "string"
+      },
+      "occurredAt": "2026-03-23T11:01:10Z",
+      "sessionId": "ms_2026-03-23T10-30-00Z_budget-v1",
+      "actor": {
+        "userId": "user:ana",
+        "displayName": "Ana",
+        "origin": "office-addin"
+      }
+    },
+    {
+      "actionType": "manual_edit",
+      "conflictId": "conflict:range:summary:0:B4:B6",
+      "decision": "manual_edit",
+      "finalValue": {
+        "value": "Quarterly plan v2 + A total",
+        "displayValue": "Quarterly plan v2 + A total",
+        "formula": null,
+        "type": "string"
+      },
+      "occurredAt": "2026-03-23T11:02:00Z",
+      "sessionId": "ms_2026-03-23T10-30-00Z_budget-v1",
+      "actor": {
+        "userId": "user:ana",
+        "displayName": "Ana",
+        "origin": "office-addin"
+      }
+    }
+  ]
 }
+```
+
+### Resumen técnico y export simple para soporte
+
+El historial no necesita duplicarse en una tabla independiente. En su lugar, el sistema puede derivar dos vistas ligeras desde `MergeDecision.history`:
+
+1. `technicalSummary`: resumen JSON para inspección rápida en UI interna o adjunto de soporte.
+2. `supportExport`: colección plana (`jsonl`, `csv` o `ndjson`) generada a partir de cada entrada de `history`, preservando `decisionId`, `targetId` y `conflictId`.
+
+Ejemplo de `technicalSummary` derivado:
+
+```json
+{
+  "sessionId": "ms_2026-03-23T10-30-00Z_budget-v1",
+  "generatedAt": "2026-03-23T11:05:00Z",
+  "decisionCount": 1,
+  "historyEntryCount": 2,
+  "conflicts": [
+    {
+      "decisionId": "decision:conflict:range:summary:0:B4:B6",
+      "conflictId": "conflict:range:summary:0:B4:B6",
+      "lastDecision": "manual_edit",
+      "lastOccurredAt": "2026-03-23T11:02:00Z",
+      "lastActor": "user:ana",
+      "lastFinalValue": "Quarterly plan v2 + A total"
+    }
+  ]
+}
+```
+
+Ejemplo de `supportExport` plano en JSON Lines:
+
+```json
+{"sessionId":"ms_2026-03-23T10-30-00Z_budget-v1","decisionId":"decision:conflict:range:summary:0:B4:B6","targetId":"conflict:range:summary:0:B4:B6","conflictId":"conflict:range:summary:0:B4:B6","decision":"take_b","finalValue":"Quarterly plan v2","occurredAt":"2026-03-23T11:01:10Z","userId":"user:ana"}
+{"sessionId":"ms_2026-03-23T10-30-00Z_budget-v1","decisionId":"decision:conflict:range:summary:0:B4:B6","targetId":"conflict:range:summary:0:B4:B6","conflictId":"conflict:range:summary:0:B4:B6","decision":"manual_edit","finalValue":"Quarterly plan v2 + A total","occurredAt":"2026-03-23T11:02:00Z","userId":"user:ana"}
 ```
 
 ---
@@ -424,7 +513,52 @@ Representa el estado materializado tras aplicar todas las decisiones.
 | `userDecision` | string | Decisión agregada final. |
 | `finalState` | string | `merged`, `unresolved`, etc. |
 | `appliedDecisionIds` | array | Decisiones aplicadas. |
+| `exportValidation` | object | Resultado de la validación final antes de generar el workbook. |
 | `output` | object | Ruta del workbook resultante y resumen. |
+| `technicalSummary` | object | Vista derivada para soporte interno a partir de `MergeDecision.history`. |
+| `supportExport` | object | Artefacto exportable sencillo generado desde `MergeDecision.history`. |
+
+### Validación final y salida exportable
+
+Antes de crear el archivo `.xlsx`, el sistema debe materializar una validación final explícita. Esta validación bloquea la exportación si:
+
+- existen conflictos con `finalState = unresolved` o `pending`,
+- hay decisiones manuales sin valor/fórmula final persistida,
+- la sesión referencia hojas u operaciones que ya no son compatibles con el workbook activo.
+
+Se recomienda modelar esta fase con dos estructuras:
+
+```json
+{
+  "exportValidation": {
+    "readyToExport": true,
+    "pendingConflictCount": 0,
+    "manualEditsWithoutValueCount": 0,
+    "structuralErrors": [],
+    "validatedAt": "2026-03-23T10:45:00Z"
+  },
+  "output": {
+    "suggestedFileName": "budget.base__merge__2026-03-23_10-45.xlsx",
+    "exportSummary": {}
+  }
+}
+```
+
+`output.exportSummary` debe servir tanto para la UI como para auditoría interna.
+
+### Estructura recomendada para `exportSummary`
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `affectedSheets` | array | Nombres de hojas incluidas o modificadas en el resultado. |
+| `resolvedConflictCount` | number | Conflictos resueltos en la sesión. |
+| `acceptedFromA` | number | Decisiones finales que tomaron el lado A/base. |
+| `acceptedFromB` | number | Decisiones finales que tomaron el lado B/comparado. |
+| `manualEditCount` | number | Conflictos o celdas resueltos con edición manual. |
+| `autoResolvedCount` | number | Cambios resueltos automáticamente por regla. |
+| `decisionsByType` | array | Conteo por tipo de decisión. |
+| `visibleSummaryLines` | array | Líneas listas para mostrar o copiar en pantalla. |
+| `auditExport` | object | Payload resumido para persistencia o descarga posterior. |
 
 ### Ejemplo mínimo
 
@@ -456,11 +590,92 @@ Representa el estado materializado tras aplicar todas las decisiones.
     "decision:cell:summary:0:B4",
     "decision:conflict:range:summary:0:B4:B6"
   ],
+  "exportValidation": {
+    "readyToExport": true,
+    "pendingConflictCount": 0,
+    "manualEditsWithoutValueCount": 0,
+    "structuralErrors": [],
+    "validatedAt": "2026-03-23T10:45:00Z"
+  },
   "output": {
     "workbookId": "wb_merged_budget-fp-1aa1",
     "path": "/files/budget.merged.xlsx",
+    "suggestedFileName": "budget.base__merge__2026-03-23_10-45.xlsx",
     "resolvedConflictCount": 2,
     "unresolvedConflictCount": 0
+  },
+  "technicalSummary": {
+    "sessionId": "ms_2026-03-23T10-30-00Z_budget-v1",
+    "generatedAt": "2026-03-23T11:05:00Z",
+    "decisionCount": 2,
+    "historyEntryCount": 3
+  },
+  "supportExport": {
+    "format": "jsonl",
+    "path": "/files/support/ms_2026-03-23T10-30-00Z_budget-v1.history.jsonl",
+    "generatedFrom": "mergeDecisions[*].history"
+    "unresolvedConflictCount": 0,
+    "exportSummary": {
+      "affectedSheets": [
+        "Summary",
+        "Forecast"
+      ],
+      "resolvedConflictCount": 2,
+      "acceptedFromA": 1,
+      "acceptedFromB": 4,
+      "manualEditCount": 1,
+      "autoResolvedCount": 2,
+      "decisionsByType": [
+        {
+          "decisionType": "take_a",
+          "count": 1
+        },
+        {
+          "decisionType": "take_b",
+          "count": 4
+        },
+        {
+          "decisionType": "manual_edit",
+          "count": 1
+        },
+        {
+          "decisionType": "auto_resolved",
+          "count": 2
+        }
+      ],
+      "visibleSummaryLines": [
+        "Cambios aceptados de archivo base: 1",
+        "Cambios aceptados de archivo comparado: 4",
+        "Ediciones manuales: 1",
+        "Conflictos resueltos: 2"
+      ],
+      "auditExport": {
+        "sessionId": "ms_2026-03-23T10-30-00Z_budget-v1",
+        "affectedSheets": [
+          "Summary",
+          "Forecast"
+        ],
+        "resolvedConflictCount": 2,
+        "decisionsByType": [
+          {
+            "decisionType": "take_a",
+            "count": 1
+          },
+          {
+            "decisionType": "take_b",
+            "count": 4
+          },
+          {
+            "decisionType": "manual_edit",
+            "count": 1
+          },
+          {
+            "decisionType": "auto_resolved",
+            "count": 2
+          }
+        ]
+      }
+    }
   }
 }
 ```
@@ -483,6 +698,8 @@ WorkbookDiff + MergeDecision[] -> MergeResult
 
 - Mantener `sourceA` y `sourceB` incluso después del merge para auditoría.
 - No sobrescribir `CellDiff` originales; registrar la resolución en `MergeDecision` y `MergeResult`.
+- Registrar el historial mínimo dentro de `MergeDecision.history`; evitar una bitácora separada sin referencia directa al conflicto o nodo resuelto.
+- Derivar `technicalSummary` y `supportExport` desde `mergeDecisions[*].history` para no duplicar lógica de auditoría.
 - Permitir que `Conflict` apunte a múltiples `CellDiff` para soportar rangos, fórmulas dependientes o bloques pegados.
 - Si una hoja fue añadida o eliminada, marcar `sourceA.exists` o `sourceB.exists` como `false`.
 - Guardar `displayValue` además de `value` para evitar ambigüedades con fechas, porcentajes y formatos localizados.

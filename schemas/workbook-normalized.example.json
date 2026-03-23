@@ -1,0 +1,90 @@
+{
+  "workbookName": "budget.review.xlsx",
+  "sheetOrder": ["Summary", "Notes"],
+  "worksheets": [
+    {
+      "name": "Summary",
+      "index": 0,
+      "order": 0,
+      "dimensions": {
+        "rangeA1": "A1:B3",
+        "startRow": 1,
+        "endRow": 3,
+        "startColumn": 1,
+        "endColumn": 2
+      },
+      "cells": [
+        {
+          "address": "A1",
+          "row": 1,
+          "column": 1,
+          "visibleValue": "Concept",
+          "formula": null,
+          "valueType": "string"
+        },
+        {
+          "address": "B1",
+          "row": 1,
+          "column": 2,
+          "visibleValue": "Amount",
+          "formula": null,
+          "valueType": "string"
+        },
+        {
+          "address": "A2",
+          "row": 2,
+          "column": 1,
+          "visibleValue": "Revenue",
+          "formula": null,
+          "valueType": "string"
+        },
+        {
+          "address": "B2",
+          "row": 2,
+          "column": 2,
+          "visibleValue": "1200",
+          "formula": null,
+          "valueType": "number"
+        },
+        {
+          "address": "B3",
+          "row": 3,
+          "column": 2,
+          "visibleValue": "1200",
+          "formula": "SUM(B2:B2)",
+          "valueType": "number"
+        }
+      ]
+    },
+    {
+      "name": "Notes",
+      "index": 1,
+      "order": 1,
+      "dimensions": {
+        "rangeA1": "A1:A2",
+        "startRow": 1,
+        "endRow": 2,
+        "startColumn": 1,
+        "endColumn": 1
+      },
+      "cells": [
+        {
+          "address": "A1",
+          "row": 1,
+          "column": 1,
+          "visibleValue": "Status",
+          "formula": null,
+          "valueType": "string"
+        },
+        {
+          "address": "A2",
+          "row": 2,
+          "column": 1,
+          "visibleValue": "Ready",
+          "formula": null,
+          "valueType": "string"
+        }
+      ]
+    }
+  ]
+}
